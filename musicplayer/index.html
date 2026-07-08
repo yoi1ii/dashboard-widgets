@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Music Widget</title>
+
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+
+html, body {
+  width:100%;
+  height:100%;
+  overflow:hidden;
+  background:#fff;
+  font-family:-apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "SF Pro Text", "Segoe UI", sans-serif;
+}
+
+body {
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
+
+.widget {
+  width:320px;
+  height:172px;
+  padding:10px;
+  border-radius:24px;
+  background:#fff;
+  box-shadow:
+    0 6px 18px rgba(120,145,170,.08),
+    inset 0 0 0 1px rgba(225,230,238,.9);
+  display:grid;
+  grid-template-columns:152px 1fr;
+  gap:12px;
+}
+
+.cover-wrap {
+  position:relative;
+  width:152px;
+  height:152px;
+  border-radius:21px;
+  overflow:hidden;
+  background:#edf4ff;
+  cursor:pointer;
+  box-shadow:0 6px 16px rgba(120,145,170,.12);
+}
+
+.cover {
+  width:100%;
+  height:100%;
+  background-size:cover;
+  background-position:center;
+  transition:opacity .28s ease, filter .28s ease;
+}
+
+.cover.fade {
+  opacity:.35;
+  filter:blur(5px);
+}
+
+.lyric {
+  position:absolute;
+  inset:0;
+  padding:15px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  text-align:center;
+  background:linear-gradient(180deg, rgba(80,95,110,.12), rgba(40,50,60,.44));
+  color:white;
+  font-size:12px;
+  font-weight:600;
+  line-height:1.38;
+  letter-spacing:-.04em;
+  opacity:0;
+  pointer-events:none;
+  transition:opacity .25s ease;
+}
+
+.cover-wrap.show-lyric .lyric { opacity:1; }
+
+.songs {
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+  gap:8px;
+  padding-left:4px;
+}
+
+.song {
+  height:38px;
+  border:0;
+  border-radius:999px;
+  background:#fff;
+  color:#1d1d1f;
+  display:grid;
+  grid-template-columns:1fr 18px;
+  align-items:center;
+  padding:0 10px 0 13px;
+  cursor:pointer;
+  box-shadow:inset 0 0 0 1px rgba(222,228,236,.9);
+  position:relative;
+  transition:
+    box-shadow .2s ease,
+    transform .16s ease,
+    background .2s ease,
+    margin-left .2s ease;
+}
+
+.song.active {
+  margin-left:6px;
+  background:linear-gradient(90deg, #f4f8ff 0%, #ffffff 72%);
+  box-shadow:
+    inset 0 0 0 1px rgba(214,226,244,.95),
+    0 4px 12px rgba(120,145,170,.08);
+}
+
+.song.active::before {
+  content:"";
+  position:absolute;
+  left:-8px;
+  top:6px;
+  bottom:6px;
+  width:3px;
+  border-radius:999px;
+  background:#9bbdf4;
+}
+
+.song:active { transform:scale(.985); }
+
+.text {
+  min-width:0;
+  text-align:left;
+}
+
+.title {
+  font-size:12.5px;
+  font-weight:600;
+  letter-spacing:-.045em;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+
+.artist {
+  margin-top:1px;
+  font-size:9.8px;
+  font-weight:400;
+  color:#8e8e93;
+  letter-spacing:-.03em;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+
+.more {
+  font-size:14px;
+  color:#b6c0cc;
+  text-align:right;
+  transform:translateY(-1px);
+}
+</style>
+</head>
+
+<body>
+  <div class="widget">
+    <div class="cover-wrap" id="coverWrap">
+      <div class="cover" id="cover"></div>
+      <div class="lyric" id="lyric"></div>
+    </div>
+
+    <div class="songs" id="songList"></div>
+  </div>
+
+<script>
+/* 기본 사진 */
+const defaultCover = "linear-gradient(135deg,#eaf4ff,#ffffff 45%,#c7dbf1)";
+
+/* 여기만 바꾸면 됨!
+   title: 노래 제목
+   artist: 가수
+   cover: 사진 파일명. 예: "cover1.jpg"
+   link: 버튼 누르면 열릴 링크
+   lyric: 사진 누르면 뜨는 문구
+*/
+const songs = [
+  {
+    title: "The Chase",
+    artist: "Hearts2Hearts",
+    cover: "linear-gradient(135deg,#cfe4ff,#f7fbff 45%,#a9c8e8)",
+    link: "https://www.youtube.com/",
+    lyric: "my favorite line from The Chase"
+  },
+  {
+    title: "Butterflies",
+    artist: "Hearts2Hearts",
+    cover: "linear-gradient(135deg,#dceaff,#ffffff 42%,#b8cfea)",
+    link: "https://www.youtube.com/",
+    lyric: "my favorite line from Butterflies"
+  },
+  {
+    title: "STYLE",
+    artist: "Hearts2Hearts",
+    cover: "linear-gradient(135deg,#edf5ff,#ffffff 45%,#c1d5ec)",
+    link: "https://www.youtube.com/",
+    lyric: "my favorite line from STYLE"
+  }
+];
+
+let currentIndex = localStorage.getItem("music-current-index");
+currentIndex = currentIndex === null ? null : Number(currentIndex);
+
+let showingLyric = false;
+
+const cover = document.getElementById("cover");
+const lyric = document.getElementById("lyric");
+const coverWrap = document.getElementById("coverWrap");
+const songList = document.getElementById("songList");
+
+function applyCover(value) {
+  if (value.includes("gradient")) {
+    cover.style.backgroundImage = value;
+  } else {
+    cover.style.backgroundImage = `url("${value}")`;
+  }
+}
+
+function setCover(value, lyricText) {
+  cover.classList.add("fade");
+
+  setTimeout(() => {
+    applyCover(value);
+    lyric.textContent = lyricText;
+    cover.classList.remove("fade");
+  }, 150);
+}
+
+function renderSongs() {
+  songList.innerHTML = "";
+
+  songs.forEach((song, index) => {
+    const btn = document.createElement("button");
+    btn.className = "song" + (index === currentIndex ? " active" : "");
+
+    btn.innerHTML = `
+      <div class="text">
+        <div class="title">${song.title}</div>
+        <div class="artist">${song.artist}</div>
+      </div>
+      <div class="more">•••</div>
+    `;
+
+    btn.addEventListener("click", () => {
+      currentIndex = index;
+      localStorage.setItem("music-current-index", currentIndex);
+
+      showingLyric = false;
+      coverWrap.classList.remove("show-lyric");
+
+      setCover(song.cover, song.lyric);
+      renderSongs();
+
+      window.open(song.link, "_blank");
+    });
+
+    songList.appendChild(btn);
+  });
+}
+
+coverWrap.addEventListener("click", () => {
+  showingLyric = !showingLyric;
+
+  if (currentIndex === null) {
+    lyric.textContent = "select a song first";
+  } else {
+    lyric.textContent = songs[currentIndex].lyric;
+  }
+
+  coverWrap.classList.toggle("show-lyric", showingLyric);
+});
+
+if (currentIndex === null) {
+  applyCover(defaultCover);
+  lyric.textContent = "select a song first";
+} else {
+  applyCover(songs[currentIndex].cover);
+  lyric.textContent = songs[currentIndex].lyric;
+}
+
+renderSongs();
+</script>
+</body>
+</html>
