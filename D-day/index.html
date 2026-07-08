@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>D-Day Widget</title>
+
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+html, body {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: #fff;
+  font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "SF Pro Text", "Segoe UI", sans-serif;
+}
+
+body {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.widget {
+  width: 270px;
+  background: #fff;
+  border-radius: 22px;
+  padding: 10px 13px 8px;
+  box-shadow:
+    0 6px 18px rgba(120, 145, 170, 0.08),
+    inset 0 0 0 1px rgba(225, 230, 238, 0.9);
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+
+.title {
+  font-size: 15.5px;
+  font-weight: 600;
+  letter-spacing: -0.04em;
+  color: #9BBDF4;
+}
+
+.plus {
+  font-size: 17px;
+  font-weight: 400;
+  color: #b6c9e8;
+  line-height: 1;
+}
+
+.event {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  column-gap: 8px;
+  padding: 6.5px 0;
+  border-top: 1px solid rgba(218, 224, 232, 0.9);
+  border-radius: 10px;
+}
+
+.event:first-of-type {
+  border-top: none;
+}
+
+.event.today {
+  background: #F7FAFF;
+  padding: 7px 8px;
+  margin: 2px -3px;
+  border-top: none;
+  box-shadow: inset 0 0 0 1px rgba(210, 225, 248, 0.65);
+  animation: softAppear .28s ease-out;
+}
+
+.name {
+  font-size: 13.4px;
+  font-weight: 600;
+  line-height: 1.14;
+  letter-spacing: -0.045em;
+  color: #1d1d1f;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.date {
+  margin-top: 1.5px;
+  font-size: 10.8px;
+  font-weight: 400;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  color: #8e8e93;
+}
+
+.count {
+  align-self: center;
+  font-size: 16.5px;
+  font-weight: 600;
+  letter-spacing: -0.045em;
+  color: #9BBDF4;
+  white-space: nowrap;
+}
+
+.event.today .count {
+  color: #7FA9EA;
+}
+
+@keyframes softAppear {
+  from { background: #fff; }
+  to { background: #F7FAFF; }
+}
+</style>
+</head>
+
+<body>
+  <div class="widget">
+    <div class="header">
+      <div class="title">D-Day</div>
+      <div class="plus" id="plus">+</div>
+    </div>
+    <div id="list"></div>
+  </div>
+
+<script>
+/* ⭐ 디데이 내용 바꾸는 곳 ⭐
+   title: 화면에 보일 이름
+   date: 기준 날짜, 반드시 "YYYY-MM-DD" 형식
+
+   미래 날짜면 자동으로 D-숫자
+   오늘이면 D-Day
+   지난 날짜면 자동으로 D+숫자
+*/
+const events = [
+  { title: "Hearts2Hearts Debut", date: "2025-02-24" },
+  { title: "Hearts2Hearts Comeback", date: "2026-08-14" },
+  { title: "지필고사", date: "2026-07-09" },
+  { title: "Concert", date: "2026-10-31" }
+];
+
+function getDday(dateString) {
+  const today = new Date();
+  const target = new Date(dateString + "T00:00:00");
+
+  today.setHours(0, 0, 0, 0);
+
+  const diff = target - today;
+  const days = Math.ceil(diff / (1000 * 60 * 60 * 24));
+
+  if (days > 0) return "D-" + days;
+  if (days === 0) return "D-Day";
+  return "D+" + Math.abs(days);
+}
+
+function formatDate(dateString) {
+  const date = new Date(dateString + "T00:00:00");
+  return date.toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric"
+  });
+}
+
+function renderEvents() {
+  const list = document.getElementById("list");
+  const plus = document.getElementById("plus");
+
+  list.innerHTML = "";
+
+  let hasToday = false;
+
+  const sortedEvents = [...events].sort((a, b) => {
+    const aToday = getDday(a.date) === "D-Day";
+    const bToday = getDday(b.date) === "D-Day";
+
+    if (aToday && !bToday) return -1;
+    if (!aToday && bToday) return 1;
+    return 0;
+  });
+
+  sortedEvents.forEach(event => {
+    const item = document.createElement("div");
+    const dday = getDday(event.date);
+
+    item.className = "event";
+
+    if (dday === "D-Day") {
+      item.classList.add("today");
+      hasToday = true;
+    }
+
+    item.innerHTML = `
+      <div>
+        <div class="name">${event.title}</div>
+        <div class="date">${formatDate(event.date)}</div>
+      </div>
+      <div class="count">${dday}</div>
+    `;
+
+    list.appendChild(item);
+  });
+
+  plus.textContent = hasToday ? "♡" : "+";
+}
+
+renderEvents();
+</script>
+</body>
+</html>
