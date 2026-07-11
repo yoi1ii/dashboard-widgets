@@ -44,7 +44,7 @@ body {
   width: 270px !important;
   min-width: 270px !important;
   max-width: none !important;
-  height: 174px !important;
+  height: auto !important;
 
   padding: 10px 13px 8px;
   border-radius: 22px;
@@ -54,7 +54,7 @@ body {
     0 6px 18px rgba(120, 145, 170, 0.08),
     inset 0 0 0 1px rgba(225, 230, 238, 0.9);
 
-  overflow: hidden;
+  overflow: visible;
   transform-origin: top left;
 }
 
@@ -185,7 +185,6 @@ const events = [
 ];
 
 const BASE_WIDTH = 270;
-const BASE_HEIGHT = 174;
 const OUTER_MARGIN = 8;
 
 const scaleWrap = document.getElementById("scaleWrap");
@@ -194,6 +193,8 @@ const list = document.getElementById("list");
 const plus = document.getElementById("plus");
 
 function resizeWidget() {
+  const naturalHeight = widget.scrollHeight;
+
   const availableWidth = Math.max(
     1,
     document.documentElement.clientWidth - OUTER_MARGIN * 2
@@ -207,12 +208,12 @@ function resizeWidget() {
   const scale = Math.min(
     1,
     availableWidth / BASE_WIDTH,
-    availableHeight / BASE_HEIGHT
+    availableHeight / naturalHeight
   );
 
   widget.style.transform = `scale(${scale})`;
   scaleWrap.style.width = `${BASE_WIDTH * scale}px`;
-  scaleWrap.style.height = `${BASE_HEIGHT * scale}px`;
+  scaleWrap.style.height = `${naturalHeight * scale}px`;
 }
 
 function getDday(dateString) {
