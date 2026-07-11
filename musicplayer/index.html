@@ -3,6 +3,9 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+<link rel="stylesheet" href="../theme.css">
+
 <title>Music Widget</title>
 
 <style>
@@ -23,24 +26,20 @@ body {
 }
 
 .widget {
-  width:320px;
-  height:172px;
-  padding:10px;
-  border-radius:24px;
-  background:#fff;
-  box-shadow:
-    0 6px 18px rgba(120,145,170,.08),
-    inset 0 0 0 1px rgba(225,230,238,.9);
-  display:grid;
-  grid-template-columns:152px 1fr;
-  gap:12px;
+  width: var(--music-width);
+  padding: var(--widget-padding);
+  border-radius: var(--widget-radius);
+  background: var(--page-bg);
+  box-shadow: var(--widget-shadow);
+  grid-template-columns: var(--music-photo-size) 1fr;
+  gap: var(--music-gap);
 }
 
 .cover-wrap {
   position:relative;
-  width:152px;
-  height:152px;
-  border-radius:21px;
+  width: var(--music-photo-size);
+  height: var(--music-photo-size);
+  border-radius: var(--inner-radius);
   overflow:hidden;
   background:#edf4ff;
   cursor:pointer;
@@ -91,7 +90,7 @@ body {
 }
 
 .song {
-  height:38px;
+  height: var(--music-button-height);
   border:0;
   border-radius:999px;
   background:#fff;
@@ -126,7 +125,7 @@ body {
   bottom:6px;
   width:3px;
   border-radius:999px;
-  background:#9bbdf4;
+  background: var(--accent-blue);
 }
 
 .song:active { transform:scale(.985); }
