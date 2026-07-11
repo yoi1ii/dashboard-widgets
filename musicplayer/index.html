@@ -168,7 +168,6 @@ body {
     box-shadow 0.2s ease,
     transform 0.16s ease,
     background 0.2s ease,
-    margin-left 0.2s ease;
 }
 
 .song.active {
@@ -271,7 +270,7 @@ const songs = [
     title: "The Chase",
     artist: "Hearts2Hearts",
     cover: "thechase.jpg",
-    link: "https://www.youtube.com/",
+    link: "https://youtu.be/kxUA2wwYiME?si=1mBZbO-zTHCl9cpi",
     lyric: `내 모험의 첫 걸음이야
 내 마음대로 가고 싶어,
 꿈은 시작됐어`
@@ -280,7 +279,7 @@ const songs = [
     title: "FOCUS",
     artist: "Hearts2Hearts",
     cover: "focus.jpg",
-    link: "https://www.youtube.com/",
+    link: "https://youtu.be/Cfq4lgDvYno?si=XFMJQ6iszHUqexyL",
     lyric: `내 시선의 중심
 세상을 뒤로 미는 중
 어디로 가니?
@@ -289,8 +288,8 @@ const songs = [
   {
     title: "Secret Recipe",
     artist: "Hearts2Hearts",
-    cover: "csecretrecipe.jpg",
-    link: "https://www.youtube.com/",
+    cover: "secretrecipe.jpg",
+    link: "https://youtu.be/Cfq4lgDvYno?si=XFMJQ6iszHUqexyL",
     lyric: `Girls got a secret recipe
 이제 네게 비밀은 없지
 좋아해줘 그럴거지?`
@@ -397,7 +396,9 @@ function renderSongs() {
       renderSongs();
 
       if (song.link) {
-        window.open(song.link, "_blank", "noopener,noreferrer");
+        window.setTimeout(() => {
+          window.open(song.link, "_blank", "noopener,noreferrer");
+        }, 80);
       }
     });
 
