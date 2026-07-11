@@ -3,33 +3,59 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-
-<link rel="stylesheet" href="../theme.css">
-  
 <title>D-Day Widget</title>
 
-<style>
-* { margin: 0; padding: 0; box-sizing: border-box; }
+<link rel="stylesheet" href="../theme.css">
 
-html, body {
+<style>
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html,
+body {
   width: 100%;
   height: 100%;
   overflow: hidden;
   background: #fff;
-  font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "SF Pro Text", "Segoe UI", sans-serif;
 }
 
 body {
   display: flex;
   align-items: center;
   justify-content: center;
+  font-family:
+    -apple-system,
+    BlinkMacSystemFont,
+    "Apple SD Gothic Neo",
+    "SF Pro Text",
+    "Segoe UI",
+    sans-serif;
+}
+
+.scale-wrap {
+  position: relative;
+  flex: 0 0 auto;
 }
 
 .widget {
-  width: var(--dday-width);
+  width: 270px !important;
+  min-width: 270px !important;
+  max-width: none !important;
+  height: 174px !important;
+
   padding: 10px 13px 8px;
-  border-radius: var(--widget-radius);
-  box-shadow: var(--widget-shadow);
+  border-radius: 22px;
+  background: #fff;
+
+  box-shadow:
+    0 6px 18px rgba(120, 145, 170, 0.08),
+    inset 0 0 0 1px rgba(225, 230, 238, 0.9);
+
+  overflow: hidden;
+  transform-origin: top left;
 }
 
 .header {
@@ -39,11 +65,11 @@ body {
   margin-bottom: 6px;
 }
 
-.title {
+.header-title {
   font-size: 15.5px;
   font-weight: 600;
   letter-spacing: -0.04em;
-  color: var(--accent-blue);
+  color: var(--accent-blue, #9bbdf4);
 }
 
 .plus {
@@ -55,8 +81,9 @@ body {
 
 .event {
   display: grid;
-  grid-template-columns: 1fr auto;
+  grid-template-columns: minmax(0, 1fr) auto;
   column-gap: 8px;
+
   padding: 6.5px 0;
   border-top: 1px solid rgba(218, 224, 232, 0.9);
   border-radius: 10px;
@@ -67,12 +94,15 @@ body {
 }
 
 .event.today {
-  background: #F7FAFF;
+  background: #f7faff;
   padding: 7px 8px;
   margin: 2px -3px;
   border-top: none;
-  box-shadow: inset 0 0 0 1px rgba(210, 225, 248, 0.65);
-  animation: softAppear .28s ease-out;
+
+  box-shadow:
+    inset 0 0 0 1px rgba(210, 225, 248, 0.65);
+
+  animation: softAppear 0.28s ease-out;
 }
 
 .name {
@@ -81,6 +111,7 @@ body {
   line-height: 1.14;
   letter-spacing: -0.045em;
   color: #1d1d1f;
+
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -88,50 +119,63 @@ body {
 
 .date {
   margin-top: 1.5px;
+
   font-size: 10.8px;
   font-weight: 400;
   line-height: 1.1;
   letter-spacing: -0.02em;
-  color: var(--text-sub);
+  color: #8e8e93;
 }
 
 .count {
   align-self: center;
+
   font-size: 16.5px;
   font-weight: 600;
   letter-spacing: -0.045em;
-  color: #9BBDF4;
+  color: var(--accent-blue, #9bbdf4);
+
   white-space: nowrap;
 }
 
 .event.today .count {
-  color: #7FA9EA;
+  color: #7fa9ea;
 }
 
 @keyframes softAppear {
-  from { background: #fff; }
-  to { background: #F7FAFF; }
+  from {
+    background: #fff;
+  }
+
+  to {
+    background: #f7faff;
+  }
 }
 </style>
 </head>
 
 <body>
-  <div class="widget">
-    <div class="header">
-      <div class="title">D-Day</div>
-      <div class="plus" id="plus">+</div>
+  <div class="scale-wrap" id="scaleWrap">
+    <div class="widget" id="widget">
+      <div class="header">
+        <div class="header-title">D-Day</div>
+        <div class="plus" id="plus">+</div>
+      </div>
+
+      <div id="list"></div>
     </div>
-    <div id="list"></div>
   </div>
 
 <script>
-/* ⭐ 디데이 내용 바꾸는 곳 ⭐
-   title: 화면에 보일 이름
-   date: 기준 날짜, 반드시 "YYYY-MM-DD" 형식
+/*
+  여기만 바꾸면 됩니다.
 
-   미래 날짜면 자동으로 D-숫자
-   오늘이면 D-Day
-   지난 날짜면 자동으로 D+숫자
+  title : 이벤트 이름
+  date  : 날짜, 반드시 "YYYY-MM-DD" 형식
+
+  미래 날짜 → D-
+  오늘 날짜 → D-Day
+  지난 날짜 → D+
 */
 const events = [
   { title: "우유", date: "2026-02-21" },
@@ -140,14 +184,47 @@ const events = [
   { title: "생일", date: "2026-08-02" }
 ];
 
+const BASE_WIDTH = 270;
+const BASE_HEIGHT = 174;
+const OUTER_MARGIN = 8;
+
+const scaleWrap = document.getElementById("scaleWrap");
+const widget = document.getElementById("widget");
+const list = document.getElementById("list");
+const plus = document.getElementById("plus");
+
+function resizeWidget() {
+  const availableWidth = Math.max(
+    1,
+    document.documentElement.clientWidth - OUTER_MARGIN * 2
+  );
+
+  const availableHeight = Math.max(
+    1,
+    document.documentElement.clientHeight - OUTER_MARGIN * 2
+  );
+
+  const scale = Math.min(
+    1,
+    availableWidth / BASE_WIDTH,
+    availableHeight / BASE_HEIGHT
+  );
+
+  widget.style.transform = `scale(${scale})`;
+  scaleWrap.style.width = `${BASE_WIDTH * scale}px`;
+  scaleWrap.style.height = `${BASE_HEIGHT * scale}px`;
+}
+
 function getDday(dateString) {
   const today = new Date();
   const target = new Date(dateString + "T00:00:00");
 
   today.setHours(0, 0, 0, 0);
 
-  const diff = target - today;
-  const days = Math.ceil(diff / (1000 * 60 * 60 * 24));
+  const difference = target - today;
+  const days = Math.ceil(
+    difference / (1000 * 60 * 60 * 24)
+  );
 
   if (days > 0) return "D-" + days;
   if (days === 0) return "D-Day";
@@ -156,6 +233,7 @@ function getDday(dateString) {
 
 function formatDate(dateString) {
   const date = new Date(dateString + "T00:00:00");
+
   return date.toLocaleDateString("en-US", {
     month: "short",
     day: "numeric",
@@ -164,19 +242,17 @@ function formatDate(dateString) {
 }
 
 function renderEvents() {
-  const list = document.getElementById("list");
-  const plus = document.getElementById("plus");
-
   list.innerHTML = "";
 
   let hasToday = false;
 
+  /* 오늘인 이벤트만 화면 맨 위로 이동 */
   const sortedEvents = [...events].sort((a, b) => {
-    const aToday = getDday(a.date) === "D-Day";
-    const bToday = getDday(b.date) === "D-Day";
+    const aIsToday = getDday(a.date) === "D-Day";
+    const bIsToday = getDday(b.date) === "D-Day";
 
-    if (aToday && !bToday) return -1;
-    if (!aToday && bToday) return 1;
+    if (aIsToday && !bIsToday) return -1;
+    if (!aIsToday && bIsToday) return 1;
     return 0;
   });
 
@@ -196,6 +272,7 @@ function renderEvents() {
         <div class="name">${event.title}</div>
         <div class="date">${formatDate(event.date)}</div>
       </div>
+
       <div class="count">${dday}</div>
     `;
 
@@ -206,6 +283,14 @@ function renderEvents() {
 }
 
 renderEvents();
+resizeWidget();
+
+window.addEventListener("resize", resizeWidget);
+
+if ("ResizeObserver" in window) {
+  const observer = new ResizeObserver(resizeWidget);
+  observer.observe(document.documentElement);
+}
 </script>
 </body>
 </html>
