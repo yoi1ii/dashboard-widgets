@@ -3,230 +3,352 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Music Widget</title>
 
 <link rel="stylesheet" href="../theme.css">
 
-<title>Music Widget</title>
-
 <style>
-* { margin:0; padding:0; box-sizing:border-box; }
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
 
-html, body {
-  width:100%;
-  height:100%;
-  overflow:hidden;
-  background:#fff;
-  font-family:-apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "SF Pro Text", "Segoe UI", sans-serif;
+html,
+body {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: #fff;
 }
 
 body {
-  display:flex;
-  align-items:center;
-  justify-content:center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family:
+    -apple-system,
+    BlinkMacSystemFont,
+    "Apple SD Gothic Neo",
+    "SF Pro Text",
+    "Segoe UI",
+    sans-serif;
 }
 
+/* 화면이 좁으면 이 부분 전체가 비율 그대로 축소됨 */
+.scale-wrap {
+  position: relative;
+  flex: 0 0 auto;
+}
+
+/* 내부 크기는 항상 가로형 320×172로 고정 */
 .widget {
-  width: var(--music-width);
-  padding: var(--widget-padding);
-  border-radius: var(--widget-radius);
-  background: var(--page-bg);
-  box-shadow: var(--widget-shadow);
-  grid-template-columns: var(--music-photo-size) 1fr;
-  gap: var(--music-gap);
+  width: 320px !important;
+  min-width: 320px !important;
+  max-width: none !important;
+  height: 172px !important;
+
+  padding: 10px;
+  border-radius: 24px;
+  background: #fff;
+
+  box-shadow:
+    0 6px 18px rgba(120, 145, 170, 0.08),
+    inset 0 0 0 1px rgba(225, 230, 238, 0.9);
+
+  display: grid !important;
+  grid-template-columns: 152px minmax(0, 1fr) !important;
+  grid-template-rows: 152px !important;
+  gap: 12px;
+
+  overflow: visible;
+  transform-origin: top left;
 }
 
 .cover-wrap {
-  position:relative;
-  width: var(--music-photo-size);
-  height: var(--music-photo-size);
-  border-radius: var(--inner-radius);
-  overflow:hidden;
-  background:#edf4ff;
-  cursor:pointer;
-  box-shadow:0 6px 16px rgba(120,145,170,.12);
+  position: relative;
+  width: 152px;
+  height: 152px;
+  min-width: 152px;
+  min-height: 152px;
+
+  border-radius: 21px;
+  overflow: hidden;
+  background: #edf4ff;
+  cursor: pointer;
+
+  box-shadow: 0 6px 16px rgba(120, 145, 170, 0.12);
 }
 
 .cover {
-  width:100%;
-  height:100%;
-  background-size:cover;
-  background-position:center;
-  transition:opacity .28s ease, filter .28s ease;
+  width: 100%;
+  height: 100%;
+  background-size: cover;
+  background-position: center;
+  transition:
+    opacity 0.28s ease,
+    filter 0.28s ease;
 }
 
 .cover.fade {
-  opacity:.35;
-  filter:blur(5px);
+  opacity: 0.35;
+  filter: blur(5px);
 }
 
 .lyric {
-  position:absolute;
-  inset:0;
-  padding:15px;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  text-align:center;
-  background:linear-gradient(180deg, rgba(80,95,110,.12), rgba(40,50,60,.44));
-  color:white;
-  font-size:12px;
-  font-weight:600;
-  line-height:1.38;
-  letter-spacing:-.04em;
-  opacity:0;
-  pointer-events:none;
-  transition:opacity .25s ease;
-  white-space:pre-line;
+  position: absolute;
+  inset: 0;
+  padding: 15px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  text-align: center;
+  white-space: pre-line;
+
+  background:
+    linear-gradient(
+      180deg,
+      rgba(80, 95, 110, 0.12),
+      rgba(40, 50, 60, 0.44)
+    );
+
+  color: #fff;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.38;
+  letter-spacing: -0.04em;
+
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.25s ease;
 }
 
-.cover-wrap.show-lyric .lyric { opacity:1; }
+.cover-wrap.show-lyric .lyric {
+  opacity: 1;
+}
 
 .songs {
-  display:flex;
-  flex-direction:column;
-  justify-content:center;
-  gap:8px;
-  padding-left:4px;
+  width: 100%;
+  min-width: 0;
+  height: 152px;
+
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: center;
+  gap: 8px;
+
+  padding-left: 10px;
 }
 
 .song {
-  height: var(--music-button-height);
-  border:0;
-  border-radius:999px;
-  background:#fff;
-  color:#1d1d1f;
-  display:grid;
-  grid-template-columns:1fr 18px;
-  align-items:center;
-  padding:0 10px 0 13px;
-  cursor:pointer;
-  box-shadow:inset 0 0 0 1px rgba(222,228,236,.9);
-  position:relative;
+  width: 100%;
+  min-width: 0;
+  height: 38px;
+  flex: 0 0 38px;
+
+  border: 0;
+  border-radius: 999px;
+  background: #fff;
+  color: #1d1d1f;
+
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 18px;
+  align-items: center;
+
+  padding: 0 10px 0 13px;
+  cursor: pointer;
+  position: relative;
+
+  box-shadow:
+    inset 0 0 0 1px rgba(222, 228, 236, 0.9);
+
   transition:
-    box-shadow .2s ease,
-    transform .16s ease,
-    background .2s ease,
-    margin-left .2s ease;
+    box-shadow 0.2s ease,
+    transform 0.16s ease,
+    background 0.2s ease,
+    margin-left 0.2s ease;
 }
 
 .song.active {
-  margin-left:6px;
-  background:linear-gradient(90deg, #f4f8ff 0%, #ffffff 72%);
+  width: calc(100% - 6px);
+  margin-left: 6px;
+
+  background:
+    linear-gradient(
+      90deg,
+      #f4f8ff 0%,
+      #fff 72%
+    );
+
   box-shadow:
-    inset 0 0 0 1px rgba(214,226,244,.95),
-    0 4px 12px rgba(120,145,170,.08);
+    inset 0 0 0 1px rgba(214, 226, 244, 0.95),
+    0 4px 12px rgba(120, 145, 170, 0.08);
 }
 
 .song.active::before {
-  content:"";
-  position:absolute;
-  left:-8px;
-  top:6px;
-  bottom:6px;
-  width:3px;
-  border-radius:999px;
-  background: var(--accent-blue);
+  content: "";
+  position: absolute;
+
+  left: -8px;
+  top: 6px;
+  bottom: 6px;
+
+  width: 3px;
+  border-radius: 999px;
+  background: var(--accent-blue, #9bbdf4);
 }
 
-.song:active { transform:scale(.985); }
+.song:active {
+  transform: scale(0.985);
+}
 
 .text {
-  min-width:0;
-  text-align:left;
+  min-width: 0;
+  text-align: left;
 }
 
 .title {
-  font-size:12.5px;
-  font-weight:600;
-  letter-spacing:-.045em;
-  white-space:nowrap;
-  overflow:hidden;
-  text-overflow:ellipsis;
+  font-size: 12.5px;
+  font-weight: 600;
+  letter-spacing: -0.045em;
+
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .artist {
-  margin-top:1px;
-  font-size:9.8px;
-  font-weight:400;
-  color:#8e8e93;
-  letter-spacing:-.03em;
-  white-space:nowrap;
-  overflow:hidden;
-  text-overflow:ellipsis;
+  margin-top: 1px;
+
+  font-size: 9.8px;
+  font-weight: 400;
+  color: #8e8e93;
+  letter-spacing: -0.03em;
+
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .more {
-  font-size:14px;
-  color:#b6c0cc;
-  text-align:right;
-  transform:translateY(-1px);
+  font-size: 14px;
+  color: #b6c0cc;
+  text-align: right;
+  transform: translateY(-1px);
 }
 </style>
 </head>
 
 <body>
-  <div class="widget">
-    <div class="cover-wrap" id="coverWrap">
-      <div class="cover" id="cover"></div>
-      <div class="lyric" id="lyric"></div>
-    </div>
+  <div class="scale-wrap" id="scaleWrap">
+    <div class="widget" id="widget">
+      <div class="cover-wrap" id="coverWrap">
+        <div class="cover" id="cover"></div>
+        <div class="lyric" id="lyric"></div>
+      </div>
 
-    <div class="songs" id="songList"></div>
+      <div class="songs" id="songList"></div>
+    </div>
   </div>
 
 <script>
-/* 기본 사진 */
-const defaultCover="default.jpg";
+/* 처음 들어왔을 때 보이는 기본 사진 */
+const defaultCover = "default.jpg";
 
-/* 여기만 바꾸면 됨!
-   title: 노래 제목
-   artist: 가수
-   cover: 사진 파일명. 예: "cover1.jpg"
-   link: 버튼 누르면 열릴 링크
-   lyric: 사진 누르면 뜨는 문구
+/*
+  여기에서 노래 정보를 바꾸면 됩니다.
+
+  title  : 곡 제목
+  artist : 가수
+  cover  : 해당 곡을 선택했을 때 나올 사진 파일명
+  link   : 버튼을 눌렀을 때 열릴 링크
+  lyric  : 사진을 눌렀을 때 표시할 가사
 */
 const songs = [
   {
     title: "The Chase",
     artist: "Hearts2Hearts",
     cover: "thechase.jpg",
-    link: "https://youtu.be/kxUA2wwYiME?si=eKr9Si65-9Nl8L8z",
+    link: "https://www.youtube.com/",
     lyric: `내 모험의 첫 걸음이야
-    내 마음대로 가고 싶어,
-    꿈은 시작됐어`
+내 마음대로 가고 싶어,
+꿈은 시작됐어`
   },
   {
     title: "FOCUS",
     artist: "Hearts2Hearts",
     cover: "focus.jpg",
-    link: "https://youtu.be/Ur7aK4FvK-U?si=Ui7U7CqQ5Zcfpiaq",
-    lyric: `내 시선의 중심 
-    세상을 뒤로 미는 중
-    어디로 가니? 
-    널 잃지 않을래`
+    link: "https://www.youtube.com/",
+    lyric: `내 시선의 중심
+세상을 뒤로 미는 중
+어디로 가니?
+널 잃지 않을래`
   },
   {
     title: "Secret Recipe",
     artist: "Hearts2Hearts",
-    cover: "secretrecipe.jpg",
-    link: "https://youtu.be/Cfq4lgDvYno?si=oNAeSxcjq-6yPDWL",
+    cover: "csecretrecipe.jpg",
+    link: "https://www.youtube.com/",
     lyric: `Girls got a secret recipe
-    이젠 내게 비밀은 없지
-    좋아해줘 그럴거지?`
+이제 네게 비밀은 없지
+좋아해줘 그럴거지?`
   }
 ];
+
+const BASE_WIDTH = 320;
+const BASE_HEIGHT = 172;
+const OUTER_MARGIN = 8;
 
 let currentIndex = localStorage.getItem("music-current-index");
 currentIndex = currentIndex === null ? null : Number(currentIndex);
 
+if (
+  currentIndex !== null &&
+  (Number.isNaN(currentIndex) ||
+   currentIndex < 0 ||
+   currentIndex >= songs.length)
+) {
+  currentIndex = null;
+  localStorage.removeItem("music-current-index");
+}
+
 let showingLyric = false;
 
+const scaleWrap = document.getElementById("scaleWrap");
+const widget = document.getElementById("widget");
 const cover = document.getElementById("cover");
 const lyric = document.getElementById("lyric");
 const coverWrap = document.getElementById("coverWrap");
 const songList = document.getElementById("songList");
 
+/* 가로 디자인을 유지한 채 화면에 맞게 전체 축소 */
+function resizeWidget() {
+  const availableWidth = Math.max(
+    1,
+    document.documentElement.clientWidth - OUTER_MARGIN * 2
+  );
+
+  const availableHeight = Math.max(
+    1,
+    document.documentElement.clientHeight - OUTER_MARGIN * 2
+  );
+
+  const scale = Math.min(
+    1,
+    availableWidth / BASE_WIDTH,
+    availableHeight / BASE_HEIGHT
+  );
+
+  widget.style.transform = `scale(${scale})`;
+  scaleWrap.style.width = `${BASE_WIDTH * scale}px`;
+  scaleWrap.style.height = `${BASE_HEIGHT * scale}px`;
+}
+
 function applyCover(value) {
+  if (!value) return;
+
   if (value.includes("gradient")) {
     cover.style.backgroundImage = value;
   } else {
@@ -237,7 +359,7 @@ function applyCover(value) {
 function setCover(value, lyricText) {
   cover.classList.add("fade");
 
-  setTimeout(() => {
+  window.setTimeout(() => {
     applyCover(value);
     lyric.textContent = lyricText;
     cover.classList.remove("fade");
@@ -248,10 +370,12 @@ function renderSongs() {
   songList.innerHTML = "";
 
   songs.forEach((song, index) => {
-    const btn = document.createElement("button");
-    btn.className = "song" + (index === currentIndex ? " active" : "");
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className =
+      "song" + (index === currentIndex ? " active" : "");
 
-    btn.innerHTML = `
+    button.innerHTML = `
       <div class="text">
         <div class="title">${song.title}</div>
         <div class="artist">${song.artist}</div>
@@ -259,9 +383,12 @@ function renderSongs() {
       <div class="more">•••</div>
     `;
 
-    btn.addEventListener("click", () => {
+    button.addEventListener("click", () => {
       currentIndex = index;
-      localStorage.setItem("music-current-index", currentIndex);
+      localStorage.setItem(
+        "music-current-index",
+        String(currentIndex)
+      );
 
       showingLyric = false;
       coverWrap.classList.remove("show-lyric");
@@ -269,23 +396,27 @@ function renderSongs() {
       setCover(song.cover, song.lyric);
       renderSongs();
 
-      window.open(song.link, "_blank");
+      if (song.link) {
+        window.open(song.link, "_blank", "noopener,noreferrer");
+      }
     });
 
-    songList.appendChild(btn);
+    songList.appendChild(button);
   });
 }
 
 coverWrap.addEventListener("click", () => {
   showingLyric = !showingLyric;
 
-  if (currentIndex === null) {
-    lyric.textContent = "select a song first";
-  } else {
-    lyric.textContent = songs[currentIndex].lyric;
-  }
+  lyric.textContent =
+    currentIndex === null
+      ? "select a song first"
+      : songs[currentIndex].lyric;
 
-  coverWrap.classList.toggle("show-lyric", showingLyric);
+  coverWrap.classList.toggle(
+    "show-lyric",
+    showingLyric
+  );
 });
 
 if (currentIndex === null) {
@@ -297,6 +428,14 @@ if (currentIndex === null) {
 }
 
 renderSongs();
+resizeWidget();
+
+window.addEventListener("resize", resizeWidget);
+
+if ("ResizeObserver" in window) {
+  const observer = new ResizeObserver(resizeWidget);
+  observer.observe(document.documentElement);
+}
 </script>
 </body>
 </html>
