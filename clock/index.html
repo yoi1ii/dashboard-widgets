@@ -160,6 +160,18 @@ body {
   transform: translateY(11px);
 
   flex: 0 0 auto;
+
+  transition:
+    width 0.18s ease,
+    height 0.18s ease,
+    margin-left 0.18s ease;
+}
+
+/* 12시처럼 전체 길이가 긴 경우 am/pm만 조금 작게 */
+.time.wide-hour .period-slot {
+  width: 34px;
+  height: 23px;
+  margin-left: 1px;
 }
 
 .period {
@@ -401,6 +413,7 @@ function updateClock() {
   });
 
   const text = hour.padStart(2, "0") + minute;
+  timeWrap.classList.toggle("wide-hour", hour === "12");
   const firstRender = previousText === "";
 
   text.split("").forEach((number, index) => {
