@@ -225,47 +225,42 @@ body {
 .clock-actions {
   position: absolute;
   left: 50%;
-  bottom: 10px;
+  bottom: 8px;
 
   z-index: 4;
 
   display: flex;
   align-items: center;
-  gap: 7px;
+  gap: 5px;
 
   transform: translateX(-50%);
 }
 
 .action-button {
-  height: 27px;
-  min-width: 62px;
+  height: 22px;
+  min-width: 50px;
+  padding: 0 8px;
 
-  padding: 0 11px;
-
-  border: 1px solid rgba(255, 255, 255, 0.86);
+  border: 1px solid rgba(255, 255, 255, 0.82);
   border-radius: 999px;
 
-  background: rgba(255, 255, 255, 0.72);
+  background: rgba(255, 255, 255, 0.58);
   color: #7088a7;
 
   box-shadow:
-    0 3px 10px rgba(74, 103, 135, 0.1),
-    inset 0 0 0 1px rgba(202, 221, 243, 0.35);
+    0 2px 7px rgba(74, 103, 135, 0.08),
+    inset 0 0 0 1px rgba(202, 221, 243, 0.25);
 
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(7px);
+  -webkit-backdrop-filter: blur(7px);
 
-  font-size: 10.5px;
+  font-size: 9px;
   font-weight: 600;
-  letter-spacing: -0.03em;
+  letter-spacing: -0.04em;
 
   cursor: pointer;
-
-  transition:
-    transform 0.14s ease,
-    background 0.18s ease;
 }
-
+  
 .action-button:active {
   transform: scale(0.96);
   background: rgba(244, 249, 255, 0.88);
