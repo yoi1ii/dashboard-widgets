@@ -127,6 +127,10 @@ body {
     transform 0.26s ease;
 }
 
+.digit[data-value="4"] {
+  scale: 1.1;
+}
+
 .digit.enter {
   opacity: 0;
   filter: blur(3px);
@@ -728,6 +732,10 @@ function changeDigit(slot, number, animate = true) {
   newImage.dataset.value = number;
   newImage.className =
     animate ? "digit enter" : "digit";
+
+  if (number === "4") {
+  newImage.style.transform = "scale(1.1)";
+}
 
   slot.appendChild(newImage);
 
