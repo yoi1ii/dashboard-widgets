@@ -378,7 +378,18 @@ body {
 
 .empty {
   padding: 13px 5px 10px;
-}  </style>
+}  /* 위젯 전체 비율 유지 축소 */
+body {
+  padding: 8px;
+  overflow: hidden;
+}
+
+.widget {
+  width: 360px;
+  max-width: none;
+  margin: 0;
+  transform-origin: top left;
+}</style>
 </head>
 <body>
   <main class="widget" aria-label="월간 일정 캘린더">
@@ -765,7 +776,19 @@ body {
     }
 
     window.addEventListener("resize", () => render());
-    loadEvents();
+    function fitWidget() {
+  const widget = document.querySelector(".widget");
+  const availableWidth = window.innerWidth - 16;
+  const scale = Math.min(1, availableWidth / 360);
+
+  widget.style.transform = `scale(${scale})`;
+  document.body.style.height =
+    `${widget.offsetHeight * scale + 16}px`;
+}
+
+window.addEventListener("resize", fitWidget);loadEvents().finally(() => {
+  requestAnimationFrame(fitWidget);
+});
   </script>
 </body>
 </html>
