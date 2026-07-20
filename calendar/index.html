@@ -310,7 +310,75 @@
       .month { font-size: 25px; }
       .day { font-size: 15px; }
     }
-  </style>
+/* 4열용 세로 압축 */
+body {
+  padding: 8px;
+}
+
+.widget {
+  padding: 11px 10px 9px;
+  border-radius: 22px;
+}
+
+.header {
+  padding-bottom: 8px;
+}
+
+.month {
+  font-size: 24px;
+}
+
+.year {
+  margin-top: 3px;
+  font-size: 13px;
+}
+
+.divider {
+  margin-bottom: 7px;
+}
+
+.weekdays {
+  padding-bottom: 5px;
+  font-size: 12px;
+}
+
+.calendar-grid {
+  grid-auto-rows: 48px;
+}
+
+.day {
+  padding-top: 5px;
+  font-size: 14px;
+}
+
+.day-number {
+  top: 4px;
+  width: 30px;
+  height: 30px;
+}
+
+.event-dot {
+  bottom: 4px;
+}
+
+.multi-bar {
+  height: 26px;
+}
+
+.agenda {
+  margin-top: 4px;
+  padding: 8px 10px 4px;
+  min-height: 65px;
+}
+
+.event-item {
+  min-height: 34px;
+  padding: 3px 2px;
+}
+
+.empty {
+  padding: 13px 5px 10px;
+}  </style>
 </head>
 <body>
   <main class="widget" aria-label="월간 일정 캘린더">
@@ -638,7 +706,7 @@
             // Center the 30px multi-day bar directly behind that number.
             const left = startRect.left - parentRect.left + edgeInset;
             const right = endRect.right - parentRect.left - edgeInset;
-            const top = startRect.top - parentRect.top + 10;
+            const top = startRect.top - parentRect.top + 6;
 
             bar.style.left = `${left}px`;
             bar.style.top = `${top}px`;
