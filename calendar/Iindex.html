@@ -1,0 +1,703 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Notion Calendar Widget</title>
+  <style>
+    :root {
+      --blue: #8bb8ff;
+      --blue-strong: #79aaf7;
+      --blue-soft: #edf4ff;
+      --blue-bar: #e2edff;
+      --text: #2d3440;
+      --muted: #8d95a3;
+      --faint: #cfd4dc;
+      --border: #e6e9ef;
+      --card: rgba(255,255,255,.96);
+      --shadow: 0 12px 36px rgba(75, 98, 135, .10);
+      --radius: 26px;
+    }
+
+    * { box-sizing: border-box; }
+    html {
+      margin: 0;
+      width: 100%;
+      min-height: 100%;
+      background: #ffffff !important;
+      color-scheme: light;
+    }
+
+    body {
+      margin: 0;
+      width: 100%;
+      min-height: 100vh;
+      padding: 14px;
+      background: #ffffff !important;
+      color: var(--text);
+      font-family: Inter, Pretendard, -apple-system, BlinkMacSystemFont, "SF Pro Display",
+        "Segoe UI", sans-serif;
+      -webkit-font-smoothing: antialiased;
+    }
+
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      z-index: -1;
+      background: #ffffff;
+      pointer-events: none;
+    }
+
+    button, a { font: inherit; }
+    button { border: 0; cursor: pointer; }
+
+    .widget {
+      width: min(100%, 470px);
+      margin: 0 auto;
+      padding: 16px 14px 14px;
+      background: #ffffff;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .header {
+      display: grid;
+      grid-template-columns: 42px 1fr 42px;
+      align-items: center;
+      gap: 8px;
+      padding: 2px 4px 14px;
+    }
+
+    .nav-btn {
+      width: 40px;
+      height: 40px;
+      display: grid;
+      place-items: center;
+      color: #6f7887;
+      background: #fff;
+      border-radius: 50%;
+      transition: transform .18s ease, background .18s ease;
+    }
+
+    .nav-btn:hover { background: #f7f9fc; transform: translateY(-1px); }
+    .nav-btn:active { transform: scale(.96); }
+
+    .nav-btn svg { width: 21px; height: 21px; }
+
+    .month-wrap { text-align: center; }
+    .month {
+      margin: 0;
+      color: var(--blue-strong);
+      font-size: 28px;
+      line-height: 1.05;
+      font-weight: 760;
+      letter-spacing: -.7px;
+    }
+    .year {
+      margin-top: 7px;
+      color: #737b89;
+      font-size: 15px;
+      font-weight: 650;
+      letter-spacing: .15px;
+    }
+
+    .divider {
+      height: 1px;
+      margin: 0 7px 12px;
+      background: var(--border);
+    }
+
+    .weekdays,
+    .calendar-grid {
+      display: grid;
+      grid-template-columns: repeat(7, minmax(0, 1fr));
+    }
+
+    .weekdays {
+      padding: 0 3px 10px;
+      color: #69717f;
+      font-size: 13px;
+      font-weight: 700;
+      text-align: center;
+    }
+
+    .calendar-grid {
+      position: relative;
+      grid-auto-rows: 61px;
+      padding: 0 3px;
+      transition: opacity .18s ease, transform .18s ease;
+    }
+
+    .calendar-grid.leaving-left { opacity: 0; transform: translateX(-12px); }
+    .calendar-grid.leaving-right { opacity: 0; transform: translateX(12px); }
+
+    .day {
+      position: relative;
+      min-width: 0;
+      appearance: none;
+      -webkit-appearance: none;
+      border: 0;
+      background: transparent;
+      display: flex;
+      align-items: flex-start;
+      justify-content: center;
+      padding-top: 8px;
+      color: var(--text);
+      font-size: 16px;
+      font-weight: 620;
+      user-select: none;
+    }
+
+    .day.outside { color: #d1d6de; }
+    .day.clickable { cursor: pointer; }
+
+    .day-number {
+      position: absolute;
+      z-index: 4;
+      top: 7px;
+      left: 50%;
+      width: 34px;
+      height: 34px;
+      display: grid;
+      place-items: center;
+      border-radius: 50%;
+      line-height: 1;
+      transform: translateX(-50%);
+      transition: background .18s ease, color .18s ease, transform .18s ease, box-shadow .18s ease;
+    }
+
+    .day.clickable:hover .day-number {
+      background: var(--blue-soft);
+      color: var(--blue-strong);
+      transform: translateX(-50%) scale(1.03);
+    }
+
+    .day.selected .day-number,
+    .day.selected:hover .day-number {
+      background: var(--blue);
+      color: #ffffff;
+      transform: translateX(-50%) scale(1.03);
+      box-shadow: 0 5px 14px rgba(123, 171, 245, .25);
+    }
+
+    .event-dot {
+      position: absolute;
+      z-index: 5;
+      left: 50%;
+      bottom: 10px;
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+      transform: translateX(-50%);
+      background: var(--blue-strong);
+    }
+
+    .multi-bar {
+      position: absolute;
+      z-index: 2;
+      height: 30px;
+      background: var(--blue-bar);
+      pointer-events: none;
+      opacity: .96;
+    }
+    .multi-bar.start { border-radius: 10px 0 0 10px; }
+    .multi-bar.end { border-radius: 0 10px 10px 0; }
+    .multi-bar.single-row { border-radius: 10px; }
+
+    .agenda {
+      margin-top: 8px;
+      padding: 12px 12px 7px;
+      border: 1px solid var(--border);
+      border-radius: 17px;
+      background: #ffffff;
+      min-height: 84px;
+      animation: agendaIn .22s ease;
+    }
+
+    @keyframes agendaIn {
+      from { opacity: 0; transform: translateY(6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .agenda-head {
+      display: flex;
+      align-items: baseline;
+      gap: 7px;
+      margin: 0 3px 5px;
+      min-height: 22px;
+    }
+
+    .agenda-date {
+      color: var(--blue-strong);
+      font-size: 15px;
+      font-weight: 760;
+    }
+
+    .agenda-weekday {
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 650;
+    }
+
+    .event-list { display: grid; }
+    .event-item {
+      display: grid;
+      grid-template-columns: 9px minmax(0,1fr) auto 22px;
+      align-items: center;
+      gap: 8px;
+      min-height: 42px;
+      padding: 5px 2px;
+      border-top: 1px solid #eef0f4;
+      color: inherit;
+      text-decoration: none;
+      transition: background .18s ease, transform .18s ease;
+    }
+
+    .event-item:first-child { border-top: 0; }
+    .event-item:hover { background: #fafcff; transform: translateY(-1px); }
+
+    .event-bullet {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--blue-strong);
+    }
+
+    .event-title {
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .event-time {
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 600;
+    }
+
+    .external {
+      width: 18px;
+      height: 18px;
+      color: #8d96a4;
+    }
+
+    .empty {
+      padding: 19px 5px 15px;
+      color: #a0a7b2;
+      font-size: 12px;
+      font-weight: 600;
+      text-align: center;
+    }
+
+    .status {
+      margin: 8px 5px 0;
+      color: #a0a7b2;
+      font-size: 10px;
+      text-align: right;
+    }
+
+    @media (max-width: 390px) {
+      body { padding: 8px; }
+      .widget { padding-inline: 9px; border-radius: 22px; }
+      .calendar-grid { grid-auto-rows: 56px; }
+      .month { font-size: 25px; }
+      .day { font-size: 15px; }
+    }
+  </style>
+</head>
+<body>
+  <main class="widget" aria-label="월간 일정 캘린더">
+    <header class="header">
+      <button class="nav-btn" id="prevBtn" aria-label="이전 달">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+          <path d="M15 18l-6-6 6-6" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </button>
+
+      <div class="month-wrap">
+        <h1 class="month" id="monthLabel"></h1>
+        <div class="year" id="yearLabel"></div>
+      </div>
+
+      <button class="nav-btn" id="nextBtn" aria-label="다음 달">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+          <path d="M9 18l6-6-6-6" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </button>
+    </header>
+
+    <div class="divider"></div>
+
+    <div class="weekdays" aria-hidden="true">
+      <span>S</span><span>M</span><span>T</span><span>W</span><span>T</span><span>F</span><span>S</span>
+    </div>
+
+    <section class="calendar-grid" id="calendarGrid"></section>
+
+    <section class="agenda" id="agenda">
+      <div class="agenda-head">
+        <span class="agenda-date" id="agendaDate"></span>
+        <span class="agenda-weekday" id="agendaWeekday"></span>
+      </div>
+      <div class="event-list" id="eventList"></div>
+    </section>
+
+    <div class="status" id="status"></div>
+  </main>
+
+  <script>
+    /*
+      반드시 바꿀 값:
+      Firebase Function이 JSON을 반환하는 주소를 입력하세요.
+      예: https://asia-northeast3-PROJECT_ID.cloudfunctions.net/notionCalendar
+
+      반환 데이터 형식:
+      [
+        {
+          "id": "notion-page-id",
+          "title": "지필고사 (수학)",
+          "start": "2026-07-20",
+          "end": "2026-07-22",
+          "time": "09:00",
+          "url": "https://www.notion.so/..."
+        }
+      ]
+    */
+    const CONFIG = {
+  API_URL: "../events.json",
+  USE_SAMPLE_WHEN_EMPTY: false,
+  LOCALE: "en-US"
+};
+
+    const sampleEvents = [
+      {
+        id: "sample-1",
+        title: "지필고사 (수학)",
+        start: "2026-07-14",
+        end: "2026-07-16",
+        time: "09:00",
+        url: "https://www.notion.so/"
+      },
+      {
+        id: "sample-2",
+        title: "동아리 활동",
+        start: "2026-07-14",
+        end: "2026-07-14",
+        time: "16:30",
+        url: "https://www.notion.so/"
+      },
+      {
+        id: "sample-3",
+        title: "영어 발표 준비",
+        start: "2026-07-17",
+        end: "2026-07-17",
+        time: "20:00",
+        url: "https://www.notion.so/"
+      },
+      {
+        id: "sample-4",
+        title: "지필고사 기간",
+        start: "2026-07-20",
+        end: "2026-07-22",
+        time: "",
+        url: "https://www.notion.so/"
+      }
+    ];
+
+    const monthNames = [
+      "January","February","March","April","May","June",
+      "July","August","September","October","November","December"
+    ];
+    const weekdayNames = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+
+    const today = startOfDay(new Date());
+    let viewDate = new Date(today.getFullYear(), today.getMonth(), 1);
+    let selectedDate = today;
+    let events = [];
+
+    const grid = document.getElementById("calendarGrid");
+    const monthLabel = document.getElementById("monthLabel");
+    const yearLabel = document.getElementById("yearLabel");
+    const agendaDate = document.getElementById("agendaDate");
+    const agendaWeekday = document.getElementById("agendaWeekday");
+    const eventList = document.getElementById("eventList");
+    const status = document.getElementById("status");
+
+    document.getElementById("prevBtn").addEventListener("click", () => changeMonth(-1));
+    document.getElementById("nextBtn").addEventListener("click", () => changeMonth(1));
+
+    function startOfDay(date) {
+      return new Date(date.getFullYear(), date.getMonth(), date.getDate());
+    }
+
+    function parseLocalDate(value) {
+      if (!value) return null;
+      const [y, m, d] = value.slice(0, 10).split("-").map(Number);
+      return new Date(y, m - 1, d);
+    }
+
+    function toISODate(date) {
+      const y = date.getFullYear();
+      const m = String(date.getMonth() + 1).padStart(2, "0");
+      const d = String(date.getDate()).padStart(2, "0");
+      return `${y}-${m}-${d}`;
+    }
+
+    function sameDate(a, b) {
+      return a.getFullYear() === b.getFullYear() &&
+             a.getMonth() === b.getMonth() &&
+             a.getDate() === b.getDate();
+    }
+
+    function normalizeEvent(raw) {
+  const startValue = raw.start || raw.date;
+  const endValue = raw.end || raw.date || raw.start;
+
+  const start = parseLocalDate(startValue);
+  const end = parseLocalDate(endValue);
+
+  if (!start || !end || end < start) return null;
+
+  return {
+    id: raw.id || crypto.randomUUID(),
+    title: raw.title || "Untitled",
+    start,
+    end,
+    time: raw.time || "",
+    url: raw.url || "#"
+  };
+}
+
+    async function loadEvents() {
+      status.textContent = "Loading…";
+      try {
+        let data = [];
+        if (CONFIG.API_URL.trim()) {
+          const response = await fetch(CONFIG.API_URL, { cache: "no-store" });
+          if (!response.ok) throw new Error(`HTTP ${response.status}`);
+          data = await response.json();
+        } else if (CONFIG.USE_SAMPLE_WHEN_EMPTY) {
+          data = sampleEvents;
+        }
+
+        events = (Array.isArray(data) ? data : data.events || [])
+          .map(normalizeEvent)
+          .filter(Boolean);
+
+        status.textContent = CONFIG.API_URL.trim() ? "" : "Preview data";
+      } catch (error) {
+        console.error(error);
+        events = CONFIG.USE_SAMPLE_WHEN_EMPTY
+          ? sampleEvents.map(normalizeEvent).filter(Boolean)
+          : [];
+        status.textContent = "Could not load events";
+      }
+      render();
+    }
+
+    function changeMonth(delta) {
+      const directionClass = delta > 0 ? "leaving-left" : "leaving-right";
+      grid.classList.add(directionClass);
+
+      setTimeout(() => {
+        viewDate = new Date(viewDate.getFullYear(), viewDate.getMonth() + delta, 1);
+        const selectedInView =
+          selectedDate.getFullYear() === viewDate.getFullYear() &&
+          selectedDate.getMonth() === viewDate.getMonth();
+
+        if (!selectedInView) {
+          selectedDate = new Date(viewDate.getFullYear(), viewDate.getMonth(), 1);
+        }
+
+        render();
+        grid.classList.remove(directionClass);
+      }, 160);
+    }
+
+    function getCalendarDates(year, month) {
+      const first = new Date(year, month, 1);
+      const start = new Date(year, month, 1 - first.getDay());
+      return Array.from({ length: 42 }, (_, i) =>
+        new Date(start.getFullYear(), start.getMonth(), start.getDate() + i)
+      );
+    }
+
+    function eventsOn(date) {
+      return events.filter(event => date >= event.start && date <= event.end);
+    }
+
+    function hasSingleDayEvent(date) {
+      return eventsOn(date).some(event => sameDate(event.start, event.end));
+    }
+
+    function getMultiDayEventsForVisibleRange(dates) {
+      const rangeStart = dates[0];
+      const rangeEnd = dates[dates.length - 1];
+      return events.filter(event =>
+        !sameDate(event.start, event.end) &&
+        event.end >= rangeStart &&
+        event.start <= rangeEnd
+      );
+    }
+
+    function render() {
+      const year = viewDate.getFullYear();
+      const month = viewDate.getMonth();
+      monthLabel.textContent = monthNames[month];
+      yearLabel.textContent = year;
+
+      const dates = getCalendarDates(year, month);
+      grid.innerHTML = "";
+
+      dates.forEach((date, index) => {
+        const day = document.createElement("button");
+        day.type = "button";
+        day.className = "day clickable";
+        day.dataset.index = index;
+        day.dataset.date = toISODate(date);
+
+        if (date.getMonth() !== month) day.classList.add("outside");
+        if (sameDate(date, selectedDate)) day.classList.add("selected");
+
+        const number = document.createElement("span");
+        number.className = "day-number";
+        number.textContent = date.getDate();
+        day.appendChild(number);
+
+        if (hasSingleDayEvent(date)) {
+          const dot = document.createElement("span");
+          dot.className = "event-dot";
+          day.appendChild(dot);
+        }
+
+        day.addEventListener("click", () => {
+          selectedDate = date;
+          if (date.getMonth() !== month) {
+            viewDate = new Date(date.getFullYear(), date.getMonth(), 1);
+          }
+          render();
+        });
+
+        grid.appendChild(day);
+      });
+
+      renderMultiBars(dates);
+      renderAgenda();
+    }
+
+    function renderMultiBars(dates) {
+      const gridRect = () => grid.getBoundingClientRect();
+      const dayEls = [...grid.querySelectorAll(".day")];
+      const multiEvents = getMultiDayEventsForVisibleRange(dates);
+
+      multiEvents.forEach(event => {
+        for (let row = 0; row < 6; row++) {
+          const rowStartIndex = row * 7;
+          const rowEndIndex = rowStartIndex + 6;
+          const rowStartDate = dates[rowStartIndex];
+          const rowEndDate = dates[rowEndIndex];
+
+          const segmentStart = event.start > rowStartDate ? event.start : rowStartDate;
+          const segmentEnd = event.end < rowEndDate ? event.end : rowEndDate;
+          if (segmentStart > segmentEnd) continue;
+
+          const startIndex = dates.findIndex(d => sameDate(d, segmentStart));
+          const endIndex = dates.findIndex(d => sameDate(d, segmentEnd));
+          if (startIndex < 0 || endIndex < 0) continue;
+
+          const startEl = dayEls[startIndex];
+          const endEl = dayEls[endIndex];
+          const bar = document.createElement("span");
+          bar.className = "multi-bar";
+
+          const startsHere = sameDate(segmentStart, event.start);
+          const endsHere = sameDate(segmentEnd, event.end);
+
+          if (startsHere && endsHere) bar.classList.add("single-row");
+          else {
+            if (startsHere) bar.classList.add("start");
+            if (endsHere) bar.classList.add("end");
+          }
+
+          requestAnimationFrame(() => {
+            const parentRect = gridRect();
+            const startRect = startEl.getBoundingClientRect();
+            const endRect = endEl.getBoundingClientRect();
+
+            const cellWidth = startRect.width;
+            const edgeInset = Math.min(8, cellWidth * 0.14);
+
+            // The date number begins 8px from the top and is 34px tall.
+            // Center the 30px multi-day bar directly behind that number.
+            const left = startRect.left - parentRect.left + edgeInset;
+            const right = endRect.right - parentRect.left - edgeInset;
+            const top = startRect.top - parentRect.top + 10;
+
+            bar.style.left = `${left}px`;
+            bar.style.top = `${top}px`;
+            bar.style.width = `${Math.max(20, right - left)}px`;
+          });
+
+          grid.appendChild(bar);
+        }
+      });
+    }
+
+    function renderAgenda() {
+      const selectedEvents = eventsOn(selectedDate)
+        .sort((a, b) => (a.time || "99:99").localeCompare(b.time || "99:99"));
+
+      const prefix = sameDate(selectedDate, today) ? "Today · " : "";
+      agendaDate.textContent =
+        `${prefix}${monthNames[selectedDate.getMonth()].slice(0, 3)} ${selectedDate.getDate()}`;
+      agendaWeekday.textContent = `(${weekdayNames[selectedDate.getDay()]})`;
+      eventList.innerHTML = "";
+
+      if (!selectedEvents.length) {
+        const empty = document.createElement("div");
+        empty.className = "empty";
+        empty.textContent = "No events";
+        eventList.appendChild(empty);
+        return;
+      }
+
+      selectedEvents.forEach(event => {
+        const link = document.createElement("a");
+        link.className = "event-item";
+        link.href = event.url;
+        link.target = "_blank";
+        link.rel = "noopener noreferrer";
+        link.innerHTML = `
+          <span class="event-bullet"></span>
+          <span class="event-title">${escapeHTML(event.title)}</span>
+          <span class="event-time">${escapeHTML(event.time)}</span>
+          <svg class="external" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7">
+            <path d="M14 5h5v5M19 5l-8 8" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M19 13v5a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1h5" stroke-linecap="round"/>
+          </svg>
+        `;
+        eventList.appendChild(link);
+      });
+    }
+
+    function escapeHTML(value) {
+      return String(value)
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+    }
+
+    window.addEventListener("resize", () => render());
+    loadEvents();
+  </script>
+</body>
+</html>
