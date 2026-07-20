@@ -1,0 +1,1131 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Cloud Hearts Clock</title>
+
+<style>
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html,
+body {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: #fff;
+}
+
+button,
+input {
+  font: inherit;
+}
+
+button {
+  -webkit-tap-highlight-color: transparent;
+}
+
+body {
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+
+  font-family:
+    -apple-system,
+    BlinkMacSystemFont,
+    "Apple SD Gothic Neo",
+    "SF Pro Text",
+    "Segoe UI",
+    sans-serif;
+}
+
+.scale-wrap {
+  position: relative;
+  flex: 0 0 auto;
+}
+
+.clock {
+  width: 270px;
+  height: 150px;
+
+  position: relative;
+  overflow: hidden;
+
+  border-radius: 28px;
+
+  background:
+    url("bg.png")
+    center / cover
+    no-repeat;
+
+  border: 1.2px solid rgba(255, 255, 255, 0.9);
+
+  box-shadow:
+    0 8px 18px rgba(118, 145, 170, 0.14),
+    inset 0 1px 2px rgba(255, 255, 255, 0.75);
+
+  transform-origin: top left;
+}
+
+/* 시간 전체 묶음 */
+
+.time {
+  position: absolute;
+  left: 50%;
+  top: 42px;
+
+  width: max-content;
+  height: 62px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+
+  white-space: nowrap;
+
+  filter:
+    drop-shadow(0 2px 3px rgba(90, 115, 145, 0.14));
+
+  transform:
+    translateX(-50%)
+    scale(var(--time-scale, 1));
+
+  transform-origin: center;
+  transition: transform 0.18s ease;
+}
+
+.digit-slot {
+  position: relative;
+  flex: 0 0 auto;
+
+  width: 43px;
+  height: 58px;
+
+  margin: 0 -2px;
+}
+
+.digit {
+  position: absolute;
+  inset: 0;
+
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+
+  opacity: 1;
+  filter: blur(0);
+  transform: translateY(0) scale(1);
+
+  transition:
+    opacity 0.26s ease,
+    filter 0.26s ease,
+    transform 0.26s ease;
+}
+
+.digit[data-value="4"] {
+  scale: 1.1;
+}
+
+.digit.enter {
+  opacity: 0;
+  filter: blur(3px);
+  transform: translateY(3px) scale(0.985);
+}
+
+.digit.enter.show {
+  opacity: 1;
+  filter: blur(0);
+  transform: translateY(0) scale(1);
+}
+
+.digit.leave {
+  opacity: 0;
+  filter: blur(3px);
+  transform: translateY(-3px) scale(0.985);
+}
+
+.colon {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+
+  margin: 0 3px 0 5px;
+  transform: translateY(-2px);
+}
+
+.heart {
+  width: 14px;
+  height: auto;
+  display: block;
+}
+
+/* AM / PM */
+
+.period-slot {
+  position: relative;
+  flex: 0 0 auto;
+
+  width: 43px;
+  height: 29px;
+
+  margin-left: 3px;
+  transform: translateY(11px);
+
+  transition:
+    width 0.18s ease,
+    height 0.18s ease,
+    margin-left 0.18s ease;
+}
+
+.time.wide-hour .period-slot {
+  width: 34px;
+  height: 23px;
+  margin-left: 1px;
+}
+
+.period {
+  position: absolute;
+  inset: 0;
+
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+
+  opacity: 1;
+  filter: blur(0);
+  transform: translateY(0);
+
+  transition:
+    opacity 0.26s ease,
+    filter 0.26s ease,
+    transform 0.26s ease;
+}
+
+.period.enter {
+  opacity: 0;
+  filter: blur(3px);
+  transform: translateY(2px);
+}
+
+.period.enter.show {
+  opacity: 1;
+  filter: blur(0);
+  transform: translateY(0);
+}
+
+.period.leave {
+  opacity: 0;
+  filter: blur(3px);
+  transform: translateY(-2px);
+}
+
+/* 하단 기능 버튼 */
+
+.clock-actions {
+  position: absolute;
+  left: 50%;
+  bottom: 8px;
+
+  z-index: 4;
+
+  display: flex;
+  align-items: center;
+  gap: 5px;
+
+  transform: translateX(-50%);
+}
+
+.action-button {
+  height: 22px;
+  min-width: 50px;
+  padding: 0 8px;
+
+  border: 1px solid rgba(255, 255, 255, 0.82);
+  border-radius: 999px;
+
+  background: rgba(255, 255, 255, 0.58);
+  color: #7088a7;
+
+  box-shadow:
+    0 2px 7px rgba(74, 103, 135, 0.08),
+    inset 0 0 0 1px rgba(202, 221, 243, 0.25);
+
+  backdrop-filter: blur(7px);
+  -webkit-backdrop-filter: blur(7px);
+
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: -0.04em;
+
+  cursor: pointer;
+}
+  
+.action-button:active {
+  transform: scale(0.96);
+  background: rgba(244, 249, 255, 0.88);
+}
+
+/* 입력·기록 패널 */
+
+.panel {
+  position: absolute;
+  inset: 7px;
+
+  z-index: 10;
+
+  display: flex;
+  flex-direction: column;
+
+  padding: 12px;
+
+  border: 1px solid rgba(215, 224, 235, 0.96);
+  border-radius: 22px;
+
+  background: rgba(255, 255, 255, 0.97);
+
+  box-shadow:
+    0 7px 18px rgba(105, 126, 151, 0.13);
+
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+
+  transform: translateY(5px) scale(0.985);
+
+  transition:
+    opacity 0.2s ease,
+    visibility 0.2s ease,
+    transform 0.2s ease;
+}
+
+.panel.open {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+
+  transform: translateY(0) scale(1);
+}
+
+.panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  min-height: 20px;
+  margin-bottom: 8px;
+}
+
+.panel-title {
+  color: #91b4e8;
+
+  font-size: 14px;
+  font-weight: 650;
+  letter-spacing: -0.04em;
+}
+
+.close-button {
+  width: 24px;
+  height: 24px;
+
+  border: 0;
+  border-radius: 50%;
+
+  background: #f4f7fb;
+  color: #9ba5b1;
+
+  font-size: 15px;
+  line-height: 1;
+
+  cursor: pointer;
+}
+
+/* 새 기록 입력 */
+
+.log-form {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+
+.log-input {
+  width: 100%;
+  height: 39px;
+
+  padding: 0 12px;
+
+  border: 1px solid #dde4ec;
+  border-radius: 13px;
+  outline: none;
+
+  background: #fff;
+  color: #1d1d1f;
+
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: -0.035em;
+
+  transition:
+    border-color 0.18s ease,
+    box-shadow 0.18s ease;
+}
+
+.log-input:focus {
+  border-color: #b8cff1;
+
+  box-shadow:
+    0 0 0 3px rgba(155, 189, 244, 0.14);
+}
+
+.log-input::placeholder {
+  color: #a5abb2;
+}
+
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 7px;
+
+  margin-top: auto;
+}
+
+.form-button {
+  height: 27px;
+  padding: 0 12px;
+
+  border: 0;
+  border-radius: 999px;
+
+  font-size: 10.5px;
+  font-weight: 600;
+
+  cursor: pointer;
+}
+
+.cancel-button {
+  background: #f2f4f7;
+  color: #8e8e93;
+}
+
+.save-button {
+  background: #eaf2ff;
+  color: #7da5df;
+}
+
+.save-button:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+
+/* 오늘의 기록 */
+
+.log-list {
+  flex: 1;
+  min-height: 0;
+
+  overflow-y: auto;
+  overscroll-behavior: contain;
+
+  scrollbar-width: thin;
+  scrollbar-color: #d4deeb transparent;
+}
+
+.log-list::-webkit-scrollbar {
+  width: 4px;
+}
+
+.log-list::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: #d4deeb;
+}
+
+.log-item {
+  min-height: 27px;
+
+  display: grid;
+  grid-template-columns: 43px minmax(0, 1fr) 20px;
+  align-items: center;
+  gap: 7px;
+
+  border-bottom: 1px solid #edf0f4;
+}
+
+.log-item:last-child {
+  border-bottom: 0;
+}
+
+.log-time {
+  color: #9399a1;
+
+  font-size: 10px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.log-text {
+  min-width: 0;
+
+  color: #1d1d1f;
+
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: -0.04em;
+
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.delete-button {
+  width: 20px;
+  height: 20px;
+
+  border: 0;
+  border-radius: 50%;
+
+  background: transparent;
+  color: #bcc3cb;
+
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.delete-button:active {
+  background: #f2f5f8;
+}
+
+.empty-message,
+.loading-message,
+.error-message {
+  flex: 1;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  color: #9ca3ab;
+
+  font-size: 10.5px;
+  text-align: center;
+}
+
+.error-message {
+  color: #c38383;
+}
+
+.log-count {
+  margin-left: 5px;
+
+  color: #a7b3c1;
+
+  font-size: 9.5px;
+  font-weight: 500;
+}
+</style>
+</head>
+
+<body>
+<div class="scale-wrap" id="scaleWrap">
+  <div class="clock" id="clock">
+
+    <div class="time" id="time">
+      <div class="digit-slot" data-position="0"></div>
+      <div class="digit-slot" data-position="1"></div>
+
+      <div class="colon">
+        <img src="digits/heart.png" class="heart" alt="">
+        <img src="digits/heart.png" class="heart" alt="">
+      </div>
+
+      <div class="digit-slot" data-position="2"></div>
+      <div class="digit-slot" data-position="3"></div>
+
+      <div class="period-slot" id="periodSlot"></div>
+    </div>
+
+    <div class="clock-actions">
+      <button class="action-button" id="openWriteButton" type="button">
+        ＋ 기록
+      </button>
+
+      <button class="action-button" id="openListButton" type="button">
+        기록 보기
+      </button>
+    </div>
+
+    <!-- 기록 입력창 -->
+
+    <section class="panel" id="writePanel">
+      <div class="panel-header">
+        <h2 class="panel-title">NEW LOG</h2>
+
+        <button
+          class="close-button"
+          id="closeWriteButton"
+          type="button"
+          aria-label="닫기"
+        >
+          ×
+        </button>
+      </div>
+
+      <form class="log-form" id="logForm">
+        <input
+          class="log-input"
+          id="logInput"
+          type="text"
+          maxlength="60"
+          autocomplete="off"
+          placeholder="지금 무엇을 하고 있나요?"
+        />
+
+        <div class="form-actions">
+          <button
+            class="form-button cancel-button"
+            id="cancelButton"
+            type="button"
+          >
+            취소
+          </button>
+
+          <button
+            class="form-button save-button"
+            id="saveButton"
+            type="submit"
+          >
+            저장
+          </button>
+        </div>
+      </form>
+    </section>
+
+    <!-- 오늘 기록장 -->
+
+    <section class="panel" id="listPanel">
+      <div class="panel-header">
+        <h2 class="panel-title">
+          TODAY
+          <span class="log-count" id="logCount">0</span>
+        </h2>
+
+        <button
+          class="close-button"
+          id="closeListButton"
+          type="button"
+          aria-label="닫기"
+        >
+          ×
+        </button>
+      </div>
+
+      <div class="log-list" id="logList">
+        <div class="loading-message">기록을 불러오는 중...</div>
+      </div>
+    </section>
+
+  </div>
+</div>
+
+<script type="module">
+import {
+  addClockLog,
+  subscribeTodayClockLogs,
+  deleteClockLog
+} from "../js/firestore.js";
+
+/* --------------------------
+   시계
+--------------------------- */
+
+const BASE_WIDTH = 270;
+const BASE_HEIGHT = 150;
+const OUTER_MARGIN = 6;
+
+const DIGIT_PATH = number => `digits/${number}.png`;
+
+const scaleWrap = document.getElementById("scaleWrap");
+const clock = document.getElementById("clock");
+const timeWrap = document.getElementById("time");
+const digitSlots = [...document.querySelectorAll(".digit-slot")];
+const periodSlot = document.getElementById("periodSlot");
+
+let previousText = "";
+
+function preloadImages() {
+  const sources = [
+    ...Array.from(
+      { length: 10 },
+      (_, index) => DIGIT_PATH(index)
+    ),
+    "digits/heart.png",
+    "digits/am.png",
+    "digits/pm.png"
+  ];
+
+  sources.forEach(source => {
+    const image = new Image();
+    image.src = source;
+  });
+}
+
+function resizeWidget() {
+  const availableWidth = Math.max(
+    1,
+    document.documentElement.clientWidth - OUTER_MARGIN * 2
+  );
+
+  const availableHeight = Math.max(
+    1,
+    document.documentElement.clientHeight - OUTER_MARGIN * 2
+  );
+
+  const scale = Math.min(
+    1,
+    availableWidth / BASE_WIDTH,
+    availableHeight / BASE_HEIGHT
+  );
+
+  clock.style.transform = `scale(${scale})`;
+
+  scaleWrap.style.width = `${BASE_WIDTH * scale}px`;
+  scaleWrap.style.height = `${BASE_HEIGHT * scale}px`;
+}
+
+function fitTimeInsideClock() {
+  timeWrap.style.setProperty("--time-scale", "1");
+
+  requestAnimationFrame(() => {
+    const maximumWidth = 246;
+    const actualWidth = timeWrap.scrollWidth;
+
+    const scale = Math.min(
+      1,
+      maximumWidth / actualWidth
+    );
+
+    timeWrap.style.setProperty(
+      "--time-scale",
+      String(scale)
+    );
+  });
+}
+
+function changeDigit(slot, number, animate = true) {
+  const currentImage =
+    slot.querySelector(".digit:not(.leave)");
+
+  if (
+    currentImage &&
+    currentImage.dataset.value === number
+  ) {
+    return;
+  }
+
+  const newImage = document.createElement("img");
+
+  newImage.src = DIGIT_PATH(number);
+  newImage.alt = number;
+  newImage.dataset.value = number;
+  newImage.className =
+    animate ? "digit enter" : "digit";
+
+  if (number === "4") {
+  newImage.style.transform = "scale(1.1)";
+}
+
+  slot.appendChild(newImage);
+
+  if (!animate) {
+    currentImage?.remove();
+    return;
+  }
+
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      newImage.classList.add("show");
+      currentImage?.classList.add("leave");
+    });
+  });
+
+  window.setTimeout(() => {
+    currentImage?.remove();
+    newImage.classList.remove("enter", "show");
+  }, 300);
+}
+
+function changePeriod(period, animate = true) {
+  const currentImage =
+    periodSlot.querySelector(".period:not(.leave)");
+
+  if (
+    currentImage &&
+    currentImage.dataset.value === period
+  ) {
+    return;
+  }
+
+  const newImage = document.createElement("img");
+
+  newImage.src = `digits/${period}.png`;
+  newImage.alt = period;
+  newImage.dataset.value = period;
+  newImage.className =
+    animate ? "period enter" : "period";
+
+  periodSlot.appendChild(newImage);
+
+  if (!animate) {
+    currentImage?.remove();
+    return;
+  }
+
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      newImage.classList.add("show");
+      currentImage?.classList.add("leave");
+    });
+  });
+
+  window.setTimeout(() => {
+    currentImage?.remove();
+    newImage.classList.remove("enter", "show");
+  }, 300);
+}
+
+function updateClock() {
+  const now = new Date();
+
+  const parts = new Intl.DateTimeFormat("en-US", {
+    hour: "numeric",
+    minute: "2-digit",
+    hour12: true
+  }).formatToParts(now);
+
+  let hour = "12";
+  let minute = "00";
+  let period = "am";
+
+  parts.forEach(part => {
+    if (part.type === "hour") {
+      hour = part.value;
+    }
+
+    if (part.type === "minute") {
+      minute = part.value;
+    }
+
+    if (part.type === "dayPeriod") {
+      period = part.value.toLowerCase();
+    }
+  });
+
+  const text = hour.padStart(2, "0") + minute;
+
+  timeWrap.classList.toggle(
+    "wide-hour",
+    hour === "12"
+  );
+
+  const firstRender = previousText === "";
+
+  text.split("").forEach((number, index) => {
+    changeDigit(
+      digitSlots[index],
+      number,
+      !firstRender
+    );
+  });
+
+  changePeriod(period, !firstRender);
+
+  previousText = text;
+
+  fitTimeInsideClock();
+}
+
+/* --------------------------
+   기록 UI
+--------------------------- */
+
+const writePanel = document.getElementById("writePanel");
+const listPanel = document.getElementById("listPanel");
+
+const openWriteButton =
+  document.getElementById("openWriteButton");
+
+const openListButton =
+  document.getElementById("openListButton");
+
+const closeWriteButton =
+  document.getElementById("closeWriteButton");
+
+const closeListButton =
+  document.getElementById("closeListButton");
+
+const cancelButton =
+  document.getElementById("cancelButton");
+
+const logForm =
+  document.getElementById("logForm");
+
+const logInput =
+  document.getElementById("logInput");
+
+const saveButton =
+  document.getElementById("saveButton");
+
+const logList =
+  document.getElementById("logList");
+
+const logCount =
+  document.getElementById("logCount");
+
+let todayLogs = [];
+let isSaving = false;
+
+function closeAllPanels() {
+  writePanel.classList.remove("open");
+  listPanel.classList.remove("open");
+}
+
+function openWritePanel() {
+  closeAllPanels();
+
+  writePanel.classList.add("open");
+  logInput.value = "";
+
+  window.setTimeout(() => {
+    logInput.focus();
+  }, 180);
+}
+
+function openListPanel() {
+  closeAllPanels();
+  listPanel.classList.add("open");
+}
+
+openWriteButton.addEventListener(
+  "click",
+  openWritePanel
+);
+
+openListButton.addEventListener(
+  "click",
+  openListPanel
+);
+
+closeWriteButton.addEventListener(
+  "click",
+  closeAllPanels
+);
+
+closeListButton.addEventListener(
+  "click",
+  closeAllPanels
+);
+
+cancelButton.addEventListener(
+  "click",
+  closeAllPanels
+);
+
+document.addEventListener("keydown", event => {
+  if (event.key === "Escape") {
+    closeAllPanels();
+  }
+});
+
+/* 기록 저장 */
+
+logForm.addEventListener("submit", async event => {
+  event.preventDefault();
+
+  if (isSaving) {
+    return;
+  }
+
+  const text = logInput.value.trim();
+
+  if (!text) {
+    logInput.focus();
+    return;
+  }
+
+  try {
+    isSaving = true;
+    saveButton.disabled = true;
+    saveButton.textContent = "저장 중";
+
+    await addClockLog(text);
+
+    logInput.value = "";
+    closeAllPanels();
+  } catch (error) {
+    console.error(error);
+    alert(
+      error?.message ||
+      "기록을 저장하지 못했습니다."
+    );
+  } finally {
+    isSaving = false;
+    saveButton.disabled = false;
+    saveButton.textContent = "저장";
+  }
+});
+
+/* 기록 목록 그리기 */
+
+function renderLogs() {
+  logCount.textContent = String(todayLogs.length);
+
+  if (todayLogs.length === 0) {
+    logList.innerHTML = `
+      <div class="empty-message">
+        오늘 저장된 기록이 없습니다.
+      </div>
+    `;
+
+    return;
+  }
+
+  logList.innerHTML = "";
+
+  todayLogs.forEach(log => {
+    const item = document.createElement("div");
+    item.className = "log-item";
+
+    const time = document.createElement("span");
+    time.className = "log-time";
+    time.textContent = log.timeText || "--:--";
+
+    const text = document.createElement("span");
+    text.className = "log-text";
+    text.textContent = log.text || "";
+
+    const deleteButton =
+      document.createElement("button");
+
+    deleteButton.type = "button";
+    deleteButton.className = "delete-button";
+    deleteButton.textContent = "×";
+    deleteButton.setAttribute(
+      "aria-label",
+      `${log.text || "기록"} 삭제`
+    );
+
+    deleteButton.addEventListener(
+      "click",
+      async () => {
+        const shouldDelete = window.confirm(
+          `"${log.text}" 기록을 삭제할까요?`
+        );
+
+        if (!shouldDelete) {
+          return;
+        }
+
+        try {
+          deleteButton.disabled = true;
+          await deleteClockLog(log.id);
+        } catch (error) {
+          console.error(error);
+          alert("기록을 삭제하지 못했습니다.");
+          deleteButton.disabled = false;
+        }
+      }
+    );
+
+    item.append(time, text, deleteButton);
+    logList.appendChild(item);
+  });
+}
+
+/* Firestore의 오늘 기록 실시간 구독 */
+
+let unsubscribeClockLogs = null;
+let midnightTimer = null;
+
+/* 현재 날짜 기준으로 오늘 기록 다시 구독 */
+function startTodayLogsSubscription() {
+  /* 어제 날짜 구독이 남아 있으면 먼저 해제 */
+  if (unsubscribeClockLogs) {
+    unsubscribeClockLogs();
+  }
+
+  todayLogs = [];
+  renderLogs();
+
+  unsubscribeClockLogs = subscribeTodayClockLogs(
+    logs => {
+      todayLogs = logs;
+      renderLogs();
+    },
+
+    error => {
+      console.error(error);
+
+      logList.innerHTML = `
+        <div class="error-message">
+          기록을 불러오지 못했습니다.
+        </div>
+      `;
+    }
+  );
+}
+
+/* 다음 자정이 되면 오늘 기록 구독을 새로 시작 */
+function scheduleMidnightRefresh() {
+  if (midnightTimer) {
+    clearTimeout(midnightTimer);
+  }
+
+  const now = new Date();
+
+  const nextMidnight = new Date(
+    now.getFullYear(),
+    now.getMonth(),
+    now.getDate() + 1,
+    0,
+    0,
+    1
+  );
+
+  const delay = nextMidnight.getTime() - now.getTime();
+
+  midnightTimer = window.setTimeout(() => {
+    startTodayLogsSubscription();
+    scheduleMidnightRefresh();
+  }, delay);
+}
+
+startTodayLogsSubscription();
+scheduleMidnightRefresh();
+
+/* 시작 */
+
+preloadImages();
+updateClock();
+resizeWidget();
+
+window.setInterval(updateClock, 1000);
+
+window.addEventListener("resize", () => {
+  resizeWidget();
+  fitTimeInsideClock();
+});
+
+if ("ResizeObserver" in window) {
+  const observer = new ResizeObserver(() => {
+    resizeWidget();
+    fitTimeInsideClock();
+  });
+
+  observer.observe(document.documentElement);
+}
+</script>
+</body>
+</html>

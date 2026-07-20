@@ -1,0 +1,48 @@
+:root {
+  /* 공통 색상 */
+  --accent-blue: #9bbdf4;
+  --accent-blue-soft: #f4f8ff;
+  --text-main: #1d1d1f;
+  --text-sub: #8e8e93;
+  --line-color: rgba(222, 228, 236, 0.9);
+  --page-bg: #ffffff;
+
+  /* 공통 형태 */
+  --widget-radius: 24px;
+  --inner-radius: 20px;
+  --widget-padding: 10px;
+  --widget-shadow:
+    0 6px 18px rgba(120, 145, 170, 0.08),
+    inset 0 0 0 1px rgba(225, 230, 238, 0.9);
+
+  /* 공통 글씨 */
+  --font-main:
+    -apple-system,
+    BlinkMacSystemFont,
+    "Apple SD Gothic Neo",
+    "SF Pro Text",
+    "Segoe UI",
+    sans-serif;
+
+  /* 위젯별 기본 너비 */
+  --clock-width: 270px;
+  --dday-width: 270px;
+  --music-width: 320px;
+
+  /* 음악 위젯 */
+  --music-photo-size: 152px;
+  --music-button-height: 38px;
+  --music-gap: 12px;
+}
+
+/* 작은 화면에서는 자동 축소 */
+@media (max-width: 340px) {
+  :root {
+    --clock-width: 94vw;
+    --dday-width: 94vw;
+    --music-width: 94vw;
+
+    --music-photo-size: 136px;
+    --music-gap: 9px;
+  }
+}

@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>D-Day Widget</title>
+
+<link rel="stylesheet" href="../theme.css">
+
+<style>
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html,
+body {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: #fff;
+}
+
+body {
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  font-family:
+    -apple-system,
+    BlinkMacSystemFont,
+    "Apple SD Gothic Neo",
+    "SF Pro Text",
+    "Segoe UI",
+    sans-serif;
+}
+
+.scale-wrap {
+  position: relative;
+  flex: 0 0 auto;
+}
+
+.widget {
+  width: 270px !important;
+  min-width: 270px !important;
+  max-width: none !important;
+  height: auto !important;
+
+  padding: 10px 13px 8px;
+  border-radius: 22px;
+  background: #fff;
+
+  box-shadow:
+    0 6px 18px rgba(120, 145, 170, 0.08),
+    inset 0 0 0 1px rgba(225, 230, 238, 0.9);
+
+  overflow: visible;
+  transform-origin: top left;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+
+.header-title {
+  font-size: 15.5px;
+  font-weight: 600;
+  letter-spacing: -0.04em;
+  color: var(--accent-blue, #9bbdf4);
+}
+
+.plus {
+  font-size: 17px;
+  font-weight: 400;
+  color: #b6c9e8;
+  line-height: 1;
+}
+
+.event {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  column-gap: 8px;
+
+  padding: 6.5px 0;
+  border-top: 1px solid rgba(218, 224, 232, 0.9);
+  border-radius: 10px;
+}
+
+.event:first-of-type {
+  border-top: none;
+}
+
+.event.today {
+  background: #f7faff;
+  padding: 7px 8px;
+  margin: 2px -3px;
+  border-top: none;
+
+  box-shadow:
+    inset 0 0 0 1px rgba(210, 225, 248, 0.65);
+
+  animation: softAppear 0.28s ease-out;
+}
+
+.name {
+  font-size: 13.4px;
+  font-weight: 600;
+  line-height: 1.14;
+  letter-spacing: -0.045em;
+  color: #1d1d1f;
+
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.date {
+  margin-top: 1.5px;
+
+  font-size: 10.8px;
+  font-weight: 400;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  color: #8e8e93;
+}
+
+.count {
+  align-self: center;
+
+  font-size: 16.5px;
+  font-weight: 600;
+  letter-spacing: -0.045em;
+  color: var(--accent-blue, #9bbdf4);
+
+  white-space: nowrap;
+}
+
+.event.today .count {
+  color: #7fa9ea;
+}
+
+@keyframes softAppear {
+  from {
+    background: #fff;
+  }
+
+  to {
+    background: #f7faff;
+  }
+}
+</style>
+</head>
+
+<body>
+  <div class="scale-wrap" id="scaleWrap">
+    <div class="widget" id="widget">
+      <div class="header">
+        <div class="header-title">D-Day</div>
+        <div class="plus" id="plus">+</div>
+      </div>
+
+      <div id="list"></div>
+    </div>
+  </div>
+
+<script>
+/*
+  여기만 바꾸면 됩니다.
+
+  title : 이벤트 이름
+  date  : 날짜, 반드시 "YYYY-MM-DD" 형식
+
+  미래 날짜 → D-
+  오늘 날짜 → D-Day
+  지난 날짜 → D+
+*/
+const events = [
+  { title: "우유", date: "2026-02-21" },
+  { title: "🤍🖤", date: "2026-06-27" },
+  { title: "방학", date: "2026-07-21" },
+  { title: "생일", date: "2026-08-02" }
+];
+
+const BASE_WIDTH = 270;
+const OUTER_MARGIN = 8;
+
+const scaleWrap = document.getElementById("scaleWrap");
+const widget = document.getElementById("widget");
+const list = document.getElementById("list");
+const plus = document.getElementById("plus");
+
+function resizeWidget() {
+  const naturalHeight = widget.scrollHeight;
+
+  const availableWidth = Math.max(
+    1,
+    document.documentElement.clientWidth - OUTER_MARGIN * 2
+  );
+
+  const availableHeight = Math.max(
+    1,
+    document.documentElement.clientHeight - OUTER_MARGIN * 2
+  );
+
+  const scale = Math.min(
+    1,
+    availableWidth / BASE_WIDTH,
+    availableHeight / naturalHeight
+  );
+
+  widget.style.transform = `scale(${scale})`;
+  scaleWrap.style.width = `${BASE_WIDTH * scale}px`;
+  scaleWrap.style.height = `${naturalHeight * scale}px`;
+}
+
+function getDday(dateString) {
+  const today = new Date();
+  const target = new Date(dateString + "T00:00:00");
+
+  today.setHours(0, 0, 0, 0);
+
+  const difference = target - today;
+  const days = Math.ceil(
+    difference / (1000 * 60 * 60 * 24)
+  );
+
+  if (days > 0) return "D-" + days;
+  if (days === 0) return "D-Day";
+  return "D+" + Math.abs(days);
+}
+
+function formatDate(dateString) {
+  const date = new Date(dateString + "T00:00:00");
+
+  return date.toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric"
+  });
+}
+
+function renderEvents() {
+  list.innerHTML = "";
+
+  let hasToday = false;
+
+  /* 오늘인 이벤트만 화면 맨 위로 이동 */
+  const sortedEvents = [...events].sort((a, b) => {
+    const aIsToday = getDday(a.date) === "D-Day";
+    const bIsToday = getDday(b.date) === "D-Day";
+
+    if (aIsToday && !bIsToday) return -1;
+    if (!aIsToday && bIsToday) return 1;
+    return 0;
+  });
+
+  sortedEvents.forEach(event => {
+    const item = document.createElement("div");
+    const dday = getDday(event.date);
+
+    item.className = "event";
+
+    if (dday === "D-Day") {
+      item.classList.add("today");
+      hasToday = true;
+    }
+
+    item.innerHTML = `
+      <div>
+        <div class="name">${event.title}</div>
+        <div class="date">${formatDate(event.date)}</div>
+      </div>
+
+      <div class="count">${dday}</div>
+    `;
+
+    list.appendChild(item);
+  });
+
+  plus.textContent = hasToday ? "♡" : "+";
+}
+
+renderEvents();
+resizeWidget();
+
+window.addEventListener("resize", resizeWidget);
+
+if ("ResizeObserver" in window) {
+  const observer = new ResizeObserver(resizeWidget);
+  observer.observe(document.documentElement);
+}
+</script>
+</body>
+</html>
