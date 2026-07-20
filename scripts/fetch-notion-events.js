@@ -61,14 +61,20 @@ async function main() {
   const pages = await fetchAllPages();
 
   const events = pages
-    .map((page) => ({
-      title: getTitle(page),
-      date: getDate(page),
-      url: page.url,
-    }))
-    .filter((event) => event.title && event.date)
-    .sort((a, b) => a.date.localeCompare(b.date));
+  .map((page) => {
+    const date = getDateRange(page);
 
+    return {
+      title: getTitle(page),
+      start: date.start,
+      end: date.end,
+      date: date.start,
+      url: page.url,
+    };
+  })
+  .filter((event) => event.title && event.start)
+  .sort((a, b) => a.start.localeCompare(b.start));
+  
   const outputPath = path.join(__dirname, "..", "events.json");
 
   fs.writeFileSync(
