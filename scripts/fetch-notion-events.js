@@ -48,8 +48,13 @@ function getTitle(page) {
   return titleParts.map((part) => part.plain_text).join("").trim();
 }
 
-function getDate(page) {
-  return page.properties?.["날짜"]?.date?.start ?? null;
+function getDateRange(page) {
+  const date = page.properties?.["날짜"]?.date;
+
+  return {
+    start: date?.start ?? null,
+    end: date?.end ?? date?.start ?? null,
+  };
 }
 
 async function main() {
