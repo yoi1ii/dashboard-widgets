@@ -4,64 +4,107 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Notion Calendar Widget</title>
+
   <style>
     :root {
+      --base-width: 470px;
+
       --blue: #8bb8ff;
       --blue-strong: #79aaf7;
       --blue-soft: #edf4ff;
       --blue-bar: #e2edff;
+
       --text: #2d3440;
       --muted: #8d95a3;
-      --faint: #cfd4dc;
-      --border: #e6e9ef;
-      --card: rgba(255,255,255,.96);
-      --shadow: 0 12px 36px rgba(75, 98, 135, .10);
+      --outside: #d1d6de;
+      --border: #e5e9ef;
+
+      /* 바깥 배경은 흰색이고, 회색은 그림자로만 보입니다. */
+      --shadow:
+        0 12px 28px rgba(74, 84, 102, 0.14),
+        0 2px 8px rgba(74, 84, 102, 0.07);
+
       --radius: 26px;
     }
 
-    * { box-sizing: border-box; }
-    html {
-      margin: 0;
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
       width: 100%;
-      min-height: 100%;
-      background: #ffffff !important;
+      height: 100%;
+      margin: 0;
+      overflow: hidden;
+      background: #ffffff;
       color-scheme: light;
     }
 
     body {
-      margin: 0;
-      width: 100%;
-      min-height: 100vh;
-      padding: 14px;
-      background: #ffffff !important;
       color: var(--text);
-      font-family: Inter, Pretendard, -apple-system, BlinkMacSystemFont, "SF Pro Display",
-        "Segoe UI", sans-serif;
+      font-family:
+        Inter, Pretendard, -apple-system, BlinkMacSystemFont,
+        "SF Pro Display", "Segoe UI", sans-serif;
       -webkit-font-smoothing: antialiased;
     }
 
-
-    body::before {
-      content: "";
-      position: fixed;
-      inset: 0;
-      z-index: -1;
-      background: #ffffff;
-      pointer-events: none;
+    button,
+    a {
+      font: inherit;
     }
 
-    button, a { font: inherit; }
-    button { border: 0; cursor: pointer; }
+    button {
+      border: 0;
+      cursor: pointer;
+    }
+
+    /*
+      노션 임베드 영역입니다.
+      영역이 작아져도 스크롤을 만들지 않고, 달력 전체를 같은 비율로 축소합니다.
+    */
+    .viewport {
+      width: 100%;
+      height: 100%;
+      padding: 10px;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      overflow: hidden;
+      background: #ffffff;
+    }
+
+    /*
+      transform으로 줄인 위젯의 실제 표시 크기만큼 자리를 잡아 주는 틀입니다.
+      덕분에 잘리거나 스크롤이 생기지 않습니다.
+    */
+    .stage {
+      position: relative;
+      flex: 0 0 auto;
+      width: var(--base-width);
+      min-height: 1px;
+    }
 
     .widget {
-      width: min(100%, 470px);
-      margin: 0 auto;
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: var(--base-width);
+      margin: 0;
       padding: 16px 14px 14px;
+
       background: #ffffff;
       border: 1px solid var(--border);
       border-radius: var(--radius);
       box-shadow: var(--shadow);
+
       overflow: hidden;
+      transform-origin: top left;
+      visibility: hidden;
+    }
+
+    .widget.ready {
+      visibility: visible;
     }
 
     .header {
@@ -78,31 +121,44 @@
       display: grid;
       place-items: center;
       color: #6f7887;
-      background: #fff;
+      background: #ffffff;
       border-radius: 50%;
-      transition: transform .18s ease, background .18s ease;
+      transition: transform 0.18s ease, background 0.18s ease;
     }
 
-    .nav-btn:hover { background: #f7f9fc; transform: translateY(-1px); }
-    .nav-btn:active { transform: scale(.96); }
+    .nav-btn:hover {
+      background: #f7f9fc;
+      transform: translateY(-1px);
+    }
 
-    .nav-btn svg { width: 21px; height: 21px; }
+    .nav-btn:active {
+      transform: scale(0.96);
+    }
 
-    .month-wrap { text-align: center; }
+    .nav-btn svg {
+      width: 21px;
+      height: 21px;
+    }
+
+    .month-wrap {
+      text-align: center;
+    }
+
     .month {
       margin: 0;
       color: var(--blue-strong);
       font-size: 28px;
       line-height: 1.05;
       font-weight: 760;
-      letter-spacing: -.7px;
+      letter-spacing: -0.7px;
     }
+
     .year {
       margin-top: 7px;
       color: #737b89;
       font-size: 15px;
       font-weight: 650;
-      letter-spacing: .15px;
+      letter-spacing: 0.15px;
     }
 
     .divider {
@@ -129,11 +185,18 @@
       position: relative;
       grid-auto-rows: 61px;
       padding: 0 3px;
-      transition: opacity .18s ease, transform .18s ease;
+      transition: opacity 0.18s ease, transform 0.18s ease;
     }
 
-    .calendar-grid.leaving-left { opacity: 0; transform: translateX(-12px); }
-    .calendar-grid.leaving-right { opacity: 0; transform: translateX(12px); }
+    .calendar-grid.leaving-left {
+      opacity: 0;
+      transform: translateX(-12px);
+    }
+
+    .calendar-grid.leaving-right {
+      opacity: 0;
+      transform: translateX(12px);
+    }
 
     .day {
       position: relative;
@@ -142,9 +205,11 @@
       -webkit-appearance: none;
       border: 0;
       background: transparent;
+
       display: flex;
       align-items: flex-start;
       justify-content: center;
+
       padding-top: 8px;
       color: var(--text);
       font-size: 16px;
@@ -152,22 +217,33 @@
       user-select: none;
     }
 
-    .day.outside { color: #d1d6de; }
-    .day.clickable { cursor: pointer; }
+    .day.outside {
+      color: var(--outside);
+    }
+
+    .day.clickable {
+      cursor: pointer;
+    }
 
     .day-number {
       position: absolute;
       z-index: 4;
       top: 7px;
       left: 50%;
+
       width: 34px;
       height: 34px;
       display: grid;
       place-items: center;
+
       border-radius: 50%;
       line-height: 1;
       transform: translateX(-50%);
-      transition: background .18s ease, color .18s ease, transform .18s ease, box-shadow .18s ease;
+      transition:
+        background 0.18s ease,
+        color 0.18s ease,
+        transform 0.18s ease,
+        box-shadow 0.18s ease;
     }
 
     .day.clickable:hover .day-number {
@@ -181,7 +257,7 @@
       background: var(--blue);
       color: #ffffff;
       transform: translateX(-50%) scale(1.03);
-      box-shadow: 0 5px 14px rgba(123, 171, 245, .25);
+      box-shadow: 0 5px 14px rgba(123, 171, 245, 0.25);
     }
 
     .event-dot {
@@ -189,9 +265,11 @@
       z-index: 5;
       left: 50%;
       bottom: 10px;
+
       width: 5px;
       height: 5px;
       border-radius: 50%;
+
       transform: translateX(-50%);
       background: var(--blue-strong);
     }
@@ -202,33 +280,51 @@
       height: 30px;
       background: var(--blue-bar);
       pointer-events: none;
-      opacity: .96;
+      opacity: 0.96;
     }
-    .multi-bar.start { border-radius: 10px 0 0 10px; }
-    .multi-bar.end { border-radius: 0 10px 10px 0; }
-    .multi-bar.single-row { border-radius: 10px; }
+
+    .multi-bar.start {
+      border-radius: 10px 0 0 10px;
+    }
+
+    .multi-bar.end {
+      border-radius: 0 10px 10px 0;
+    }
+
+    .multi-bar.single-row {
+      border-radius: 10px;
+    }
 
     .agenda {
       margin-top: 8px;
       padding: 12px 12px 7px;
+      min-height: 84px;
+
       border: 1px solid var(--border);
       border-radius: 17px;
       background: #ffffff;
-      min-height: 84px;
-      animation: agendaIn .22s ease;
+
+      animation: agendaIn 0.22s ease;
     }
 
     @keyframes agendaIn {
-      from { opacity: 0; transform: translateY(6px); }
-      to { opacity: 1; transform: translateY(0); }
+      from {
+        opacity: 0;
+        transform: translateY(6px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
     }
 
     .agenda-head {
+      min-height: 22px;
+      margin: 0 3px 5px;
       display: flex;
       align-items: baseline;
       gap: 7px;
-      margin: 0 3px 5px;
-      min-height: 22px;
     }
 
     .agenda-date {
@@ -243,22 +339,34 @@
       font-weight: 650;
     }
 
-    .event-list { display: grid; }
-    .event-item {
+    .event-list {
       display: grid;
-      grid-template-columns: 9px minmax(0,1fr) auto 22px;
-      align-items: center;
-      gap: 8px;
+    }
+
+    .event-item {
       min-height: 42px;
       padding: 5px 2px;
+
+      display: grid;
+      grid-template-columns: 9px minmax(0, 1fr) auto 22px;
+      align-items: center;
+      gap: 8px;
+
       border-top: 1px solid #eef0f4;
       color: inherit;
       text-decoration: none;
-      transition: background .18s ease, transform .18s ease;
+
+      transition: background 0.18s ease, transform 0.18s ease;
     }
 
-    .event-item:first-child { border-top: 0; }
-    .event-item:hover { background: #fafcff; transform: translateY(-1px); }
+    .event-item:first-child {
+      border-top: 0;
+    }
+
+    .event-item:hover {
+      background: #fafcff;
+      transform: translateY(-1px);
+    }
 
     .event-bullet {
       width: 7px;
@@ -297,141 +405,111 @@
     }
 
     .status {
+      min-height: 12px;
       margin: 8px 5px 0;
       color: #a0a7b2;
       font-size: 10px;
       text-align: right;
     }
-
-    @media (max-width: 390px) {
-      body { padding: 8px; }
-      .widget { padding-inline: 9px; border-radius: 22px; }
-      .calendar-grid { grid-auto-rows: 56px; }
-      .month { font-size: 25px; }
-      .day { font-size: 15px; }
-    }
-  /* 위젯 전체 비율 유지 축소 */
-body {
-  padding: 8px;
-  overflow: hidden;
-}
-
-.widget {
-  width: 360px;
-  max-width: none;
-  margin: 0;
-  transform-origin: top left;
-}</style>
+  </style>
 </head>
+
 <body>
-  <main class="widget" aria-label="월간 일정 캘린더">
-    <header class="header">
-      <button class="nav-btn" id="prevBtn" aria-label="이전 달">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
-          <path d="M15 18l-6-6 6-6" stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
-      </button>
+  <div class="viewport" id="viewport">
+    <div class="stage" id="stage">
+      <main class="widget" id="widget" aria-label="월간 일정 캘린더">
+        <header class="header">
+          <button class="nav-btn" id="prevBtn" aria-label="이전 달">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+              <path
+                d="M15 18l-6-6 6-6"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+          </button>
 
-      <div class="month-wrap">
-        <h1 class="month" id="monthLabel"></h1>
-        <div class="year" id="yearLabel"></div>
-      </div>
+          <div class="month-wrap">
+            <h1 class="month" id="monthLabel"></h1>
+            <div class="year" id="yearLabel"></div>
+          </div>
 
-      <button class="nav-btn" id="nextBtn" aria-label="다음 달">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
-          <path d="M9 18l6-6-6-6" stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
-      </button>
-    </header>
+          <button class="nav-btn" id="nextBtn" aria-label="다음 달">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+              <path
+                d="M9 18l6-6-6-6"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+          </button>
+        </header>
 
-    <div class="divider"></div>
+        <div class="divider"></div>
 
-    <div class="weekdays" aria-hidden="true">
-      <span>S</span><span>M</span><span>T</span><span>W</span><span>T</span><span>F</span><span>S</span>
+        <div class="weekdays" aria-hidden="true">
+          <span>S</span>
+          <span>M</span>
+          <span>T</span>
+          <span>W</span>
+          <span>T</span>
+          <span>F</span>
+          <span>S</span>
+        </div>
+
+        <section class="calendar-grid" id="calendarGrid"></section>
+
+        <section class="agenda" id="agenda">
+          <div class="agenda-head">
+            <span class="agenda-date" id="agendaDate"></span>
+            <span class="agenda-weekday" id="agendaWeekday"></span>
+          </div>
+
+          <div class="event-list" id="eventList"></div>
+        </section>
+
+        <div class="status" id="status"></div>
+      </main>
     </div>
-
-    <section class="calendar-grid" id="calendarGrid"></section>
-
-    <section class="agenda" id="agenda">
-      <div class="agenda-head">
-        <span class="agenda-date" id="agendaDate"></span>
-        <span class="agenda-weekday" id="agendaWeekday"></span>
-      </div>
-      <div class="event-list" id="eventList"></div>
-    </section>
-
-    <div class="status" id="status"></div>
-  </main>
+  </div>
 
   <script>
-    /*
-      반드시 바꿀 값:
-      Firebase Function이 JSON을 반환하는 주소를 입력하세요.
-      예: https://asia-northeast3-PROJECT_ID.cloudfunctions.net/notionCalendar
-
-      반환 데이터 형식:
-      [
-        {
-          "id": "notion-page-id",
-          "title": "지필고사 (수학)",
-          "start": "2026-07-20",
-          "end": "2026-07-22",
-          "time": "09:00",
-          "url": "https://www.notion.so/..."
-        }
-      ]
-    */
     const CONFIG = {
-  API_URL: "../events.json",
-  USE_SAMPLE_WHEN_EMPTY: false,
-  LOCALE: "en-US"
-};
+      /* calendar 폴더 기준으로 루트의 events.json을 읽습니다. */
+      API_URL: "../events.json",
+      LOCALE: "en-US"
+    };
 
-    const sampleEvents = [
-      {
-        id: "sample-1",
-        title: "지필고사 (수학)",
-        start: "2026-07-14",
-        end: "2026-07-16",
-        time: "09:00",
-        url: "https://www.notion.so/"
-      },
-      {
-        id: "sample-2",
-        title: "동아리 활동",
-        start: "2026-07-14",
-        end: "2026-07-14",
-        time: "16:30",
-        url: "https://www.notion.so/"
-      },
-      {
-        id: "sample-3",
-        title: "영어 발표 준비",
-        start: "2026-07-17",
-        end: "2026-07-17",
-        time: "20:00",
-        url: "https://www.notion.so/"
-      },
-      {
-        id: "sample-4",
-        title: "지필고사 기간",
-        start: "2026-07-20",
-        end: "2026-07-22",
-        time: "",
-        url: "https://www.notion.so/"
-      }
-    ];
+    const BASE_WIDTH = 470;
 
     const monthNames = [
-      "January","February","March","April","May","June",
-      "July","August","September","October","November","December"
+      "January",
+      "February",
+      "March",
+      "April",
+      "May",
+      "June",
+      "July",
+      "August",
+      "September",
+      "October",
+      "November",
+      "December"
     ];
-    const weekdayNames = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
 
-    const today = startOfDay(new Date());
-    let viewDate = new Date(today.getFullYear(), today.getMonth(), 1);
-    let selectedDate = today;
-    let events = [];
+    const weekdayNames = [
+      "Sun",
+      "Mon",
+      "Tue",
+      "Wed",
+      "Thu",
+      "Fri",
+      "Sat"
+    ];
+
+    const viewport = document.getElementById("viewport");
+    const stage = document.getElementById("stage");
+    const widget = document.getElementById("widget");
 
     const grid = document.getElementById("calendarGrid");
     const monthLabel = document.getElementById("monthLabel");
@@ -441,90 +519,180 @@ body {
     const eventList = document.getElementById("eventList");
     const status = document.getElementById("status");
 
-    document.getElementById("prevBtn").addEventListener("click", () => changeMonth(-1));
-    document.getElementById("nextBtn").addEventListener("click", () => changeMonth(1));
+    const today = startOfDay(new Date());
+
+    let viewDate = new Date(
+      today.getFullYear(),
+      today.getMonth(),
+      1
+    );
+
+    let selectedDate = today;
+    let events = [];
+    let fitFrame = 0;
+
+    document
+      .getElementById("prevBtn")
+      .addEventListener("click", () => changeMonth(-1));
+
+    document
+      .getElementById("nextBtn")
+      .addEventListener("click", () => changeMonth(1));
 
     function startOfDay(date) {
-      return new Date(date.getFullYear(), date.getMonth(), date.getDate());
+      return new Date(
+        date.getFullYear(),
+        date.getMonth(),
+        date.getDate()
+      );
     }
 
     function parseLocalDate(value) {
-      if (!value) return null;
-      const [y, m, d] = value.slice(0, 10).split("-").map(Number);
-      return new Date(y, m - 1, d);
+      if (!value) {
+        return null;
+      }
+
+      const text = String(value).slice(0, 10);
+      const parts = text.split("-").map(Number);
+
+      if (
+        parts.length !== 3 ||
+        parts.some((number) => !Number.isFinite(number))
+      ) {
+        return null;
+      }
+
+      const [year, month, day] = parts;
+      return new Date(year, month - 1, day);
     }
 
-    function toISODate(date) {
-      const y = date.getFullYear();
-      const m = String(date.getMonth() + 1).padStart(2, "0");
-      const d = String(date.getDate()).padStart(2, "0");
-      return `${y}-${m}-${d}`;
+    function getTimeFromValue(value) {
+      if (!value || typeof value !== "string") {
+        return "";
+      }
+
+      const match = value.match(/T(\d{2}:\d{2})/);
+      return match ? match[1] : "";
     }
 
-    function sameDate(a, b) {
-      return a.getFullYear() === b.getFullYear() &&
-             a.getMonth() === b.getMonth() &&
-             a.getDate() === b.getDate();
+    function sameDate(first, second) {
+      return (
+        first.getFullYear() === second.getFullYear() &&
+        first.getMonth() === second.getMonth() &&
+        first.getDate() === second.getDate()
+      );
     }
 
     function normalizeEvent(raw) {
-  const startValue = raw.start || raw.date;
-  const endValue = raw.end || raw.date || raw.start;
+      const dateObject =
+        raw.date &&
+        typeof raw.date === "object" &&
+        !Array.isArray(raw.date)
+          ? raw.date
+          : null;
 
-  const start = parseLocalDate(startValue);
-  const end = parseLocalDate(endValue);
+      const startValue =
+        raw.start ||
+        dateObject?.start ||
+        raw.date;
 
-  if (!start || !end || end < start) return null;
+      const endValue =
+        raw.end ||
+        dateObject?.end ||
+        startValue;
 
-  return {
-    id: raw.id || crypto.randomUUID(),
-    title: raw.title || "Untitled",
-    start,
-    end,
-    time: raw.time || "",
-    url: raw.url || "#"
-  };
-}
+      const start = parseLocalDate(startValue);
+      const end = parseLocalDate(endValue);
+
+      if (!start || !end || end < start) {
+        return null;
+      }
+
+      return {
+        id:
+          raw.id ||
+          `${raw.title || "event"}-${String(startValue)}`,
+
+        title:
+          raw.title ||
+          raw.name ||
+          "Untitled",
+
+        start,
+        end,
+
+        time:
+          raw.time ||
+          getTimeFromValue(startValue),
+
+        url:
+          raw.url ||
+          raw.pageUrl ||
+          "#"
+      };
+    }
 
     async function loadEvents() {
       status.textContent = "Loading…";
+
       try {
-        let data = [];
-        if (CONFIG.API_URL.trim()) {
-          const response = await fetch(CONFIG.API_URL, { cache: "no-store" });
-          if (!response.ok) throw new Error(`HTTP ${response.status}`);
-          data = await response.json();
-        } else if (CONFIG.USE_SAMPLE_WHEN_EMPTY) {
-          data = sampleEvents;
+        const response = await fetch(
+          CONFIG.API_URL,
+          { cache: "no-store" }
+        );
+
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}`);
         }
 
-        events = (Array.isArray(data) ? data : data.events || [])
+        const data = await response.json();
+        const list = Array.isArray(data)
+          ? data
+          : Array.isArray(data.events)
+            ? data.events
+            : [];
+
+        events = list
           .map(normalizeEvent)
           .filter(Boolean);
 
-        status.textContent = CONFIG.API_URL.trim() ? "" : "Preview data";
+        status.textContent = "";
       } catch (error) {
         console.error(error);
-        events = CONFIG.USE_SAMPLE_WHEN_EMPTY
-          ? sampleEvents.map(normalizeEvent).filter(Boolean)
-          : [];
+        events = [];
         status.textContent = "Could not load events";
       }
+
       render();
     }
 
     function changeMonth(delta) {
-      const directionClass = delta > 0 ? "leaving-left" : "leaving-right";
+      const directionClass =
+        delta > 0
+          ? "leaving-left"
+          : "leaving-right";
+
       grid.classList.add(directionClass);
 
-      setTimeout(() => {
-        viewDate = new Date(viewDate.getFullYear(), viewDate.getMonth() + delta, 1);
+      window.setTimeout(() => {
+        viewDate = new Date(
+          viewDate.getFullYear(),
+          viewDate.getMonth() + delta,
+          1
+        );
+
         const selectedInView =
-          selectedDate.getFullYear() === viewDate.getFullYear() &&
-          selectedDate.getMonth() === viewDate.getMonth();
+          selectedDate.getFullYear() ===
+            viewDate.getFullYear() &&
+          selectedDate.getMonth() ===
+            viewDate.getMonth();
 
         if (!selectedInView) {
-          selectedDate = new Date(viewDate.getFullYear(), viewDate.getMonth(), 1);
+          selectedDate = new Date(
+            viewDate.getFullYear(),
+            viewDate.getMonth(),
+            1
+          );
         }
 
         render();
@@ -534,52 +702,83 @@ body {
 
     function getCalendarDates(year, month) {
       const first = new Date(year, month, 1);
-      const start = new Date(year, month, 1 - first.getDay());
-      return Array.from({ length: 42 }, (_, i) =>
-        new Date(start.getFullYear(), start.getMonth(), start.getDate() + i)
+
+      const start = new Date(
+        year,
+        month,
+        1 - first.getDay()
+      );
+
+      return Array.from(
+        { length: 42 },
+        (_, index) =>
+          new Date(
+            start.getFullYear(),
+            start.getMonth(),
+            start.getDate() + index
+          )
       );
     }
 
     function eventsOn(date) {
-      return events.filter(event => date >= event.start && date <= event.end);
+      return events.filter(
+        (event) =>
+          date >= event.start &&
+          date <= event.end
+      );
     }
 
     function hasSingleDayEvent(date) {
-      return eventsOn(date).some(event => sameDate(event.start, event.end));
+      return eventsOn(date).some(
+        (event) =>
+          sameDate(event.start, event.end)
+      );
     }
 
     function getMultiDayEventsForVisibleRange(dates) {
       const rangeStart = dates[0];
       const rangeEnd = dates[dates.length - 1];
-      return events.filter(event =>
-        !sameDate(event.start, event.end) &&
-        event.end >= rangeStart &&
-        event.start <= rangeEnd
+
+      return events.filter(
+        (event) =>
+          !sameDate(event.start, event.end) &&
+          event.end >= rangeStart &&
+          event.start <= rangeEnd
       );
     }
 
     function render() {
       const year = viewDate.getFullYear();
       const month = viewDate.getMonth();
+      const dates = getCalendarDates(year, month);
+
       monthLabel.textContent = monthNames[month];
       yearLabel.textContent = year;
 
-      const dates = getCalendarDates(year, month);
       grid.innerHTML = "";
 
-      dates.forEach((date, index) => {
+      dates.forEach((date) => {
         const day = document.createElement("button");
         day.type = "button";
         day.className = "day clickable";
-        day.dataset.index = index;
-        day.dataset.date = toISODate(date);
 
-        if (date.getMonth() !== month) day.classList.add("outside");
-        if (sameDate(date, selectedDate)) day.classList.add("selected");
+        if (date.getMonth() !== month) {
+          day.classList.add("outside");
+        }
+
+        if (sameDate(date, selectedDate)) {
+          day.classList.add("selected");
+        }
+
+        day.setAttribute(
+          "aria-label",
+          `${date.getFullYear()}-${date.getMonth() + 1}-${date.getDate()}`
+        );
 
         const number = document.createElement("span");
         number.className = "day-number";
         number.textContent = date.getDate();
+
         day.appendChild(number);
 
         if (hasSingleDayEvent(date)) {
@@ -589,10 +788,19 @@ body {
         }
 
         day.addEventListener("click", () => {
-          selectedDate = date;
-          if (date.getMonth() !== month) {
-            viewDate = new Date(date.getFullYear(), date.getMonth(), 1);
+          selectedDate = startOfDay(date);
+
+          if (
+            selectedDate.getFullYear() !== year ||
+            selectedDate.getMonth() !== month
+          ) {
+            viewDate = new Date(
+              selectedDate.getFullYear(),
+              selectedDate.getMonth(),
+              1
+            );
           }
+
           render();
         });
 
@@ -601,60 +809,102 @@ body {
 
       renderMultiBars(dates);
       renderAgenda();
+      scheduleFit();
     }
 
     function renderMultiBars(dates) {
-      const gridRect = () => grid.getBoundingClientRect();
-      const dayEls = [...grid.querySelectorAll(".day")];
-      const multiEvents = getMultiDayEventsForVisibleRange(dates);
+      const dayElements = [
+        ...grid.querySelectorAll(".day")
+      ];
 
-      multiEvents.forEach(event => {
-        for (let row = 0; row < 6; row++) {
+      const multiEvents =
+        getMultiDayEventsForVisibleRange(dates);
+
+      multiEvents.forEach((event) => {
+        for (let row = 0; row < 6; row += 1) {
           const rowStartIndex = row * 7;
           const rowEndIndex = rowStartIndex + 6;
+
           const rowStartDate = dates[rowStartIndex];
           const rowEndDate = dates[rowEndIndex];
 
-          const segmentStart = event.start > rowStartDate ? event.start : rowStartDate;
-          const segmentEnd = event.end < rowEndDate ? event.end : rowEndDate;
-          if (segmentStart > segmentEnd) continue;
+          const segmentStart =
+            event.start > rowStartDate
+              ? event.start
+              : rowStartDate;
 
-          const startIndex = dates.findIndex(d => sameDate(d, segmentStart));
-          const endIndex = dates.findIndex(d => sameDate(d, segmentEnd));
-          if (startIndex < 0 || endIndex < 0) continue;
+          const segmentEnd =
+            event.end < rowEndDate
+              ? event.end
+              : rowEndDate;
 
-          const startEl = dayEls[startIndex];
-          const endEl = dayEls[endIndex];
+          if (segmentStart > segmentEnd) {
+            continue;
+          }
+
+          const startIndex = dates.findIndex(
+            (date) => sameDate(date, segmentStart)
+          );
+
+          const endIndex = dates.findIndex(
+            (date) => sameDate(date, segmentEnd)
+          );
+
+          if (startIndex < 0 || endIndex < 0) {
+            continue;
+          }
+
+          const startElement = dayElements[startIndex];
+          const endElement = dayElements[endIndex];
+
           const bar = document.createElement("span");
           bar.className = "multi-bar";
 
-          const startsHere = sameDate(segmentStart, event.start);
-          const endsHere = sameDate(segmentEnd, event.end);
+          const startsHere =
+            sameDate(segmentStart, event.start);
 
-          if (startsHere && endsHere) bar.classList.add("single-row");
-          else {
-            if (startsHere) bar.classList.add("start");
-            if (endsHere) bar.classList.add("end");
+          const endsHere =
+            sameDate(segmentEnd, event.end);
+
+          if (startsHere && endsHere) {
+            bar.classList.add("single-row");
+          } else {
+            if (startsHere) {
+              bar.classList.add("start");
+            }
+
+            if (endsHere) {
+              bar.classList.add("end");
+            }
           }
 
-          requestAnimationFrame(() => {
-            const parentRect = gridRect();
-            const startRect = startEl.getBoundingClientRect();
-            const endRect = endEl.getBoundingClientRect();
+          /*
+            getBoundingClientRect 대신 offset 값을 사용합니다.
+            그래서 위젯 전체에 scale이 적용돼도 막대 위치가 틀어지지 않습니다.
+          */
+          const cellWidth = startElement.offsetWidth;
+          const edgeInset = Math.min(
+            8,
+            cellWidth * 0.14
+          );
 
-            const cellWidth = startRect.width;
-            const edgeInset = Math.min(8, cellWidth * 0.14);
+          const left =
+            startElement.offsetLeft +
+            edgeInset;
 
-            // The date number begins 8px from the top and is 34px tall.
-            // Center the 30px multi-day bar directly behind that number.
-            const left = startRect.left - parentRect.left + edgeInset;
-            const right = endRect.right - parentRect.left - edgeInset;
-            const top = startRect.top - parentRect.top + 10;
+          const right =
+            endElement.offsetLeft +
+            endElement.offsetWidth -
+            edgeInset;
 
-            bar.style.left = `${left}px`;
-            bar.style.top = `${top}px`;
-            bar.style.width = `${Math.max(20, right - left)}px`;
-          });
+          const top =
+            startElement.offsetTop +
+            10;
+
+          bar.style.left = `${left}px`;
+          bar.style.top = `${top}px`;
+          bar.style.width =
+            `${Math.max(20, right - left)}px`;
 
           grid.appendChild(bar);
         }
@@ -663,12 +913,25 @@ body {
 
     function renderAgenda() {
       const selectedEvents = eventsOn(selectedDate)
-        .sort((a, b) => (a.time || "99:99").localeCompare(b.time || "99:99"));
+        .sort((first, second) =>
+          (first.time || "99:99").localeCompare(
+            second.time || "99:99"
+          )
+        );
 
-      const prefix = sameDate(selectedDate, today) ? "Today · " : "";
+      const prefix =
+        sameDate(selectedDate, today)
+          ? "Today · "
+          : "";
+
       agendaDate.textContent =
-        `${prefix}${monthNames[selectedDate.getMonth()].slice(0, 3)} ${selectedDate.getDate()}`;
-      agendaWeekday.textContent = `(${weekdayNames[selectedDate.getDay()]})`;
+        `${prefix}` +
+        `${monthNames[selectedDate.getMonth()].slice(0, 3)} ` +
+        `${selectedDate.getDate()}`;
+
+      agendaWeekday.textContent =
+        `(${weekdayNames[selectedDate.getDay()]})`;
+
       eventList.innerHTML = "";
 
       if (!selectedEvents.length) {
@@ -679,21 +942,40 @@ body {
         return;
       }
 
-      selectedEvents.forEach(event => {
+      selectedEvents.forEach((event) => {
         const link = document.createElement("a");
         link.className = "event-item";
         link.href = event.url;
         link.target = "_blank";
         link.rel = "noopener noreferrer";
+
         link.innerHTML = `
           <span class="event-bullet"></span>
-          <span class="event-title">${escapeHTML(event.title)}</span>
-          <span class="event-time">${escapeHTML(event.time)}</span>
-          <svg class="external" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7">
-            <path d="M14 5h5v5M19 5l-8 8" stroke-linecap="round" stroke-linejoin="round"/>
-            <path d="M19 13v5a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1h5" stroke-linecap="round"/>
+          <span class="event-title">
+            ${escapeHTML(event.title)}
+          </span>
+          <span class="event-time">
+            ${escapeHTML(event.time)}
+          </span>
+          <svg
+            class="external"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.7"
+          >
+            <path
+              d="M14 5h5v5M19 5l-8 8"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            />
+            <path
+              d="M19 13v5a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1h5"
+              stroke-linecap="round"
+            />
           </svg>
         `;
+
         eventList.appendChild(link);
       });
     }
@@ -707,20 +989,81 @@ body {
         .replaceAll("'", "&#039;");
     }
 
-    window.addEventListener("resize", () => render());
+    /*
+      핵심:
+      가로와 세로 중 더 부족한 쪽에 맞춰 전체 위젯을 같은 비율로 축소합니다.
+      따라서 노션 임베드 크기가 작아져도 위젯 일부가 잘리거나 스크롤이 생기지 않습니다.
+    */
     function fitWidget() {
-  const widget = document.querySelector(".widget");
-  const availableWidth = window.innerWidth - 16;
-  const scale = Math.min(1, availableWidth / 360);
+      const viewportStyle =
+        window.getComputedStyle(viewport);
 
-  widget.style.transform = `scale(${scale})`;
-  document.body.style.height =
-    `${widget.offsetHeight * scale + 16}px`;
-}
+      const horizontalPadding =
+        parseFloat(viewportStyle.paddingLeft) +
+        parseFloat(viewportStyle.paddingRight);
 
-window.addEventListener("resize", fitWidget);loadEvents().finally(() => {
-  requestAnimationFrame(fitWidget);
-});
+      const verticalPadding =
+        parseFloat(viewportStyle.paddingTop) +
+        parseFloat(viewportStyle.paddingBottom);
+
+      const availableWidth = Math.max(
+        1,
+        viewport.clientWidth - horizontalPadding
+      );
+
+      const availableHeight = Math.max(
+        1,
+        viewport.clientHeight - verticalPadding
+      );
+
+      const naturalHeight = Math.max(
+        1,
+        widget.scrollHeight
+      );
+
+      const scale = Math.min(
+        1,
+        availableWidth / BASE_WIDTH,
+        availableHeight / naturalHeight
+      );
+
+      widget.style.transform =
+        `scale(${scale})`;
+
+      stage.style.width =
+        `${BASE_WIDTH * scale}px`;
+
+      stage.style.height =
+        `${naturalHeight * scale}px`;
+
+      widget.classList.add("ready");
+    }
+
+    function scheduleFit() {
+      window.cancelAnimationFrame(fitFrame);
+
+      fitFrame = window.requestAnimationFrame(() => {
+        fitWidget();
+      });
+    }
+
+    window.addEventListener(
+      "resize",
+      scheduleFit
+    );
+
+    if ("ResizeObserver" in window) {
+      const widgetObserver =
+        new ResizeObserver(scheduleFit);
+
+      widgetObserver.observe(widget);
+    }
+
+    if (document.fonts?.ready) {
+      document.fonts.ready.then(scheduleFit);
+    }
+
+    loadEvents();
   </script>
 </body>
 </html>
